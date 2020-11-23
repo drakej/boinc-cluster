@@ -54,7 +54,7 @@ def setattrs_from_xml(obj, xml, attrfuncdict={}):
                 else:                         attrfunc = lambda x: x
             setattr(obj, e.tag, attrfunc(e))
         else:
-            print "class missing attribute '%s': %r" % (e.tag, obj)
+            print("class missing attribute '%s': %r" % (e.tag, obj))
     return obj
 
 
@@ -353,7 +353,12 @@ class HostInfo(_Struct):
         #// the following is non-empty if VBox is installed
         self.virtualbox_version = ""
 
+        self.product_name = ""
+        self.wsl_available = False
+
         self.coprocs = [] # COPROCS
+
+        self.n_usable_coprocs = 0
 
         # The following are currently unused (not in RPC XML)
         self.serialnum    = ""   #// textual description of coprocessors
@@ -407,6 +412,94 @@ class Coproc(_Struct):
 
         #self.opencl_prop = None  # OPENCL_DEVICE_PROP
 
+
+class Project(_Struct):
+    def __init__(self):
+        self.master_url = ""
+        self.project_name = ""
+        self.symstore = None
+        self.user_name = ""
+        self.team_name = ""
+        self.host_venue = None
+        self.email_hash = ""
+        self.cross_project_id = ""
+        self.external_cpid = ""
+        self.cpid_time = 0.0
+
+        self.user_total_credit = 0.0
+        self.user_expavg_credit = 0.0
+        self.user_create_time = 0.0
+
+        self.rpc_seqno = 0
+
+        self.userid = 0
+        self.teamid = 0
+        self.hostid = 0
+
+        self.host_total_credit = 0.0
+        self.host_expavg_credit = 0.0
+        self.host_create_time = 0.0
+
+        self.min_rpc_time = 0.0
+        self.next_rpc_time = 0.0
+
+        self.nrpc_failures = None
+        self.master_fetch_failures = None
+
+        self.rec = 0.0
+
+        self.rec_time = 0.0
+        self.resource_share = 0.0
+        self.desired_disk_usage = 0.0
+
+        self.duration_correction_factor = 0.0
+
+        self.sched_rpc_pending = 0
+        self.send_time_stats_log = 0
+        self.send_job_log = 0
+        
+        self.njobs_success = 0
+        self.njobs_error = 0
+
+        self.elapsed_time = 0.0
+        self.last_rpc_time = 0.0
+        self.dont_use_dcf = None
+
+        self.rsc_backoff_time = None
+        self.rsc_backoff_interval = None
+
+        self.dont_request_more_work = None
+
+        self.verify_files_on_app_start = None
+
+        self.gui_urls = []
+
+        self.sched_priority = 0.0
+        self.project_files_downloaded_time = 0.0
+        self.project_dir = ""
+
+        self.venue = None
+
+
+
+    @classmethod
+    def parse(cls, xml):
+        if not isinstance(xml, ElementTree.Element):
+            xml = ElementTree.fromstring(xml)
+
+        # parse main XML
+        result = super(Project, cls).parse(xml)
+
+        return result
+
+    def __str__(self):
+        buf = '%s:\n' % self.__class__.__name__
+        for attr in self.__dict__:
+            value = getattr(self, attr)
+            if attr in ['rec_time', 'user_create_time','host_create_time']:
+                value = time.ctime(value)
+            buf += '\t%s\t%r\n' % (attr, value)
+        return buf
 
 class Result(_Struct):
     ''' Also called "task" in some contexts '''
@@ -487,6 +580,11 @@ class Result(_Struct):
         self.wup                          = None  # WORKUNIT*
         self.project                      = None  # PROJECT*
         self.avp                          = None  # APP_VERSION*
+
+        self.progress_rate                = None
+        self.platform                     = None
+        self.bytes_sent                   = None
+        self.bytes_received               = None
 
     @classmethod
     def parse(cls, xml):
@@ -572,7 +670,8 @@ class BoincClient(object):
         if password is None and not self.hostname:
             password = read_gui_rpc_password() or ""
         nonce = self.rpc.call('<auth1/>').text
-        hash = hashlib.md5('%s%s' % (nonce, password)).hexdigest().lower()
+        inputStr = '%s%s' % (nonce, password)
+        hash = hashlib.md5(inputStr.encode('utf-8')).hexdigest().lower()
         reply = self.rpc.call('<auth2><nonce_hash>%s</nonce_hash></auth2>' % hash)
 
         if reply.tag == 'authorized':
@@ -619,6 +718,18 @@ class BoincClient(object):
             results.append(Result.parse(item))
 
         return results
+
+    def get_projects(self):
+        reply = self.rpc.call("<get_project_status/>")
+
+        if not reply or not reply.tag == 'projects':
+            return []
+
+        projects = []
+        for item in list(reply):
+            projects.append(Project.parse(item))
+        
+        return projects
 
     def set_mode(self, component, mode, duration=0):
         ''' Do the real work of set_{run,gpu,network}_mode()
@@ -685,17 +796,17 @@ def read_gui_rpc_password():
 
 
 if __name__ == '__main__':
-    with BoincClient() as boinc:
-        print boinc.connected
-        print boinc.authorized
-        print boinc.version
-        print boinc.get_cc_status()
-        for i, task in enumerate(boinc.get_tasks()):
-            print i+1, task
-        print boinc.get_host_info()
-        print boinc.run_benchmarks()
-        print boinc.set_run_mode(RunMode.NEVER, 6)
-        time.sleep(7)
-        print boinc.set_gpu_mode(RunMode.NEVER, 6)
-        time.sleep(7)
-        print boinc.set_network_mode(RunMode.NEVER, 6)
+    with BoincClient(host="192.168.2.1",passwd="2f7b4b513d02f954cd22e8109c0bc0c0") as boinc:
+        print(boinc.connected)
+        print(boinc.authorized)
+        print(boinc.version)
+        print(boinc.get_cc_status())
+        # for i, task in enumerate(boinc.get_results(True)):
+        #     print(i+1, task)
+        print(boinc.get_host_info())
+        # print boinc.run_benchmarks()
+        # print boinc.set_run_mode(RunMode.NEVER, 6)
+        # time.sleep(7)
+        # print boinc.set_gpu_mode(RunMode.NEVER, 6)
+        # time.sleep(7)
+        # print boinc.set_network_mode(RunMode.NEVER, 6)

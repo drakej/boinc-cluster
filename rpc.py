@@ -25,7 +25,7 @@ from xml.etree import ElementTree
 
 GUI_RPC_HOSTNAME    = None  # localhost
 GUI_RPC_PORT        = 31416
-GUI_RPC_TIMEOUT     = 30
+GUI_RPC_TIMEOUT     = 10
 
 class Rpc(object):
     ''' Class to perform GUI RPC calls to a BOINC core client.
@@ -86,16 +86,16 @@ class Rpc(object):
             request = ElementTree.fromstring(request)
 
         # pack request
-        end = '\003'
-        req = "<boinc_gui_rpc_request>\n%s\n</boinc_gui_rpc_request>\n%s" \
-            % (ElementTree.tostring(request).replace(' />','/>'), end)
+        end = b'\003'
+        req = b"<boinc_gui_rpc_request>\n%s\n</boinc_gui_rpc_request>\n%s" \
+            % (ElementTree.tostring(request).replace(b' />',b'/>'), end)
 
         try:
             self.sock.sendall(req)
         except (socket.error, socket.herror, socket.gaierror, socket.timeout):
             raise
 
-        req = ""
+        req = b""
         while True:
             try:
                 buf = self.sock.recv(8192)
@@ -109,7 +109,7 @@ class Rpc(object):
         req += buf[:n]
 
         # unpack reply (remove root tag, ie: first and last lines)
-        req = '\n'.join(req.strip().rsplit('\n')[1:-1])
+        req = b'\n'.join(req.strip().rsplit(b'\n')[1:-1])
 
         if text_output:
             return req
@@ -119,8 +119,9 @@ class Rpc(object):
 
 if __name__ == '__main__':
     with Rpc(text_output=True) as rpc:
-        print rpc.call('<exchange_versions/>')
-        print rpc.call('<get_cc_status/>')
-        print rpc.call('<get_results/>')
-        print rpc.call('<get_host_info/>')
-        print rpc.call('<run_benchmarks/>')
+        print(rpc.call('<exchange_versions/>'))
+        print(rpc.call('<get_cc_status/>'))
+        #print(rpc.call('<get_results/>'))
+        print(rpc.call('<get_host_info/>'))
+        print(rpc.call("<get_project_status/>"))
+        #print(rpc.call('<run_benchmarks/>'))
