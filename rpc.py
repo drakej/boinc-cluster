@@ -23,9 +23,10 @@
 import socket
 from xml.etree import ElementTree
 
-GUI_RPC_HOSTNAME    = None  # localhost
-GUI_RPC_PORT        = 31416
-GUI_RPC_TIMEOUT     = 10
+GUI_RPC_HOSTNAME = None  # localhost
+GUI_RPC_PORT = 31416
+GUI_RPC_TIMEOUT = 10
+
 
 class Rpc(object):
     ''' Class to perform GUI RPC calls to a BOINC core client.
@@ -33,10 +34,11 @@ class Rpc(object):
         disconnect() is called. Using the same instance for all calls is also
         recommended so it reuses the same socket connection
         '''
+
     def __init__(self, hostname="", port=0, timeout=0, text_output=False):
         self.hostname = hostname
-        self.port     = port
-        self.timeout  = timeout
+        self.port = port
+        self.timeout = timeout
         self.sock = None
         self.text_output = text_output
 
@@ -57,10 +59,11 @@ class Rpc(object):
             self.disconnect()
 
         self.hostname = hostname or GUI_RPC_HOSTNAME
-        self.port     = port     or GUI_RPC_PORT
-        self.timeout  = timeout  or GUI_RPC_TIMEOUT
+        self.port = port or GUI_RPC_PORT
+        self.timeout = timeout or GUI_RPC_TIMEOUT
 
-        self.sock = socket.create_connection(self.sockargs[0:2], self.sockargs[2])
+        self.sock = socket.create_connection(
+            self.sockargs[0:2], self.sockargs[2])
 
     def disconnect(self):
         ''' Disconnect from host. Calling multiple times is OK (idempotent)
@@ -88,7 +91,7 @@ class Rpc(object):
         # pack request
         end = b'\003'
         req = b"<boinc_gui_rpc_request>\n%s\n</boinc_gui_rpc_request>\n%s" \
-            % (ElementTree.tostring(request).replace(b' />',b'/>'), end)
+            % (ElementTree.tostring(request).replace(b' />', b'/>'), end)
 
         try:
             self.sock.sendall(req)
@@ -104,12 +107,16 @@ class Rpc(object):
             except socket.error:
                 raise
             n = buf.find(end)
-            if not n == -1: break
+            if not n == -1:
+                break
             req += buf
         req += buf[:n]
 
         # unpack reply (remove root tag, ie: first and last lines)
-        req = b'\n'.join(req.strip().rsplit(b'\n')[1:-1])
+        req = b"\n".join(req.strip().rsplit(b"\n")[1:-1])
+        #req = '\n'.join(str(req).strip().split('\\n'))
+
+        # print(req)
 
         if text_output:
             return req
@@ -119,9 +126,10 @@ class Rpc(object):
 
 if __name__ == '__main__':
     with Rpc(text_output=True) as rpc:
-        print(rpc.call('<exchange_versions/>'))
-        print(rpc.call('<get_cc_status/>'))
-        #print(rpc.call('<get_results/>'))
-        print(rpc.call('<get_host_info/>'))
-        print(rpc.call("<get_project_status/>"))
-        #print(rpc.call('<run_benchmarks/>'))
+        # print(rpc.call('<exchange_versions/>'))
+        # print(rpc.call('<get_cc_status/>'))
+        # print(rpc.call('<get_results/>'))
+        # print(rpc.call('<get_host_info/>'))
+        # print(rpc.call("<get_project_status/>"))
+        print(rpc.call("<get_state/>"))
+        # print(rpc.call('<run_benchmarks/>'))
