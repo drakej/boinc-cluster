@@ -1,0 +1,32 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="table-responsive">
+    <table class="table-sm table table-bordered table-hover">
+        <thead>
+            <tr>
+                <th>Host</th>
+                <th>Name</th>
+                <th>Model</th>
+                <th nowrap>BOINC Version</th>
+                <th>CPU</th>
+                <th>GPU</th>
+                <th>Operating System</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for host,data in hosts.items() %}
+            <tr>
+                <td nowrap>{{host}}</td>
+                <td nowrap>{{data.hostname}}</td>
+                <td nowrap>{{data.productName}}</td>
+                <td>{{data.boincVersion}}</td>
+                <td nowrap>{{data.processorVendor}} {{data.processorModel}} ({{data.ncpus}} processors)</td>
+                <td nowrap>{{data.gpu}}</td>
+                <td nowrap>{{data.osName}} {{data.osVersion}}</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+{% endblock %}

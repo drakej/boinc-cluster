@@ -1,0 +1,57 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<table id="tasks_table" class="table table-sm table-bordered">
+    <thead>
+        <tr>
+            <th class="nowrap">Host</th>
+            <th class="nowrap">Project</th>
+            <th class="nowrap">Progress</th>
+            <th class="nowrap">Status</th>
+            <th class="nowrap">Elapsed</th>
+            <th class="nowrap">Remaining</th>
+            <th class="nowrap">Deadline</th>
+            <th class="nowrap">Application</th>
+            <th>Name</th>
+        </tr>
+    </thead>
+</table>
+{% endblock %}
+{% block script %}
+<script type="text/javascript">
+
+
+    $(document).ready(function () {
+
+        let table = $('#tasks_table').DataTable({
+            "ajax": '{{ url_for('tasksLive') }}',
+            "pageLength": 25,
+            "columns": [
+                { data: "hostname" },
+                { data: "projectName" },
+                {
+                    data: "percent",
+                    createdCell: function (td, value, rowData, row, col) {
+                        $(td).html("<div class=\"progress\" title=\"" + value + "%\">"
+                            + "<div class=\"progress-bar text-dark\" role=\"progressbar\""
+                            + "style=\"overflow: visible !important; width: " + value + "%; background-color: #bfd8d8;\""
+                            + "aria-valuenow=\"" + value + "\" aria-valuemin=\"0\" aria-valuemax=\"100\">"
+                            + value + '%' + "</div></div>");
+                    }
+                },
+                { data: "status" },
+                { data: "elapsedTime", className: "text-right" },
+                { data: "remaining", className: "text-right" },
+                { data: "deadline", className: "text-right" },
+                { data: "application" },
+                { data: "name" }
+            ]
+        });
+
+
+        setInterval(function () {
+            table.ajax.reload(null, false); // user paging is not reset on reload
+        }, 10000);
+    });
+</script>
+{% endblock %}

@@ -1,0 +1,120 @@
+{% extends 'base.html' %}
+
+{% block title %}BOINC Cluster - Statistics{% endblock %}
+{% block content %}
+<div class="accordion mb-3" id="statsAccordion">
+{% for host,data in statistics.items() %}
+<div class="card">
+    <div class="card-header p-0" id="heading{{loop.index}}">
+        <h2 class="mb-0">
+          <a class="btn btn-link btn-block text-left" type="button" data-toggle="collapse" data-target="#collapse{{loop.index}}" 
+          aria-expanded="true" 
+          aria-controls="collapse{{loop.index}}">{{host}}</a>
+        </h2>
+    </div>
+    <div id="collapse{{loop.index}}" class="collapse{% if loop.first %} show{% endif %}" aria-labelledby="heading{{loop.index}}" data-parent="#statsAccordion">
+        <div class="card-body">
+            <div class="row">
+                {% for ps in data.project_statistics %}
+                <div class="col-md-12">
+                    <h5 class="mt-2">{{ps.project.project_name}}</h5>
+                    <div class="row mb-4">
+                        <div class="col-md-6">
+                            <div id="{{host}}_{{ps.master_url}}_total_chart"></div>
+                        </div>
+                        <div class="col-md-6">
+                            <div id="{{host}}_{{ps.master_url}}_avg_chart"></div>
+                        </div>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+</div>
+{% endfor %}
+</div>
+{% endblock %}
+{% block script %}
+<script src="{{ url_for('static', filename='js/highcharts.js') }}"></script>
+<script type="text/javascript">
+
+Highcharts.setOptions({
+    lang: {
+        thousandsSep: ','
+    }
+})
+
+{% for host,data in statistics.items() %}
+{% for project in data.project_statistics %}
+Highcharts.chart('{{host}}_{{project.master_url}}_total_chart', {
+    title: {
+        text: ''
+    },
+    yAxis: {
+        title: {
+            text: ''
+        }
+    },
+    xAxis: {
+        type: 'datetime',
+        tickInterval: 7 * 24 * 3600 * 1000,
+        tickWidth: 0,
+        gridLineWidth: 1,
+        minorGridLineDashStyle: 'dash',
+        minorTickInterval: 'auto'
+    },
+    credits: {
+        enabled: false
+    },
+    series: [{
+        name: 'Total Credit',
+        type: 'spline',
+        marker: {
+            radius: 2
+        },
+        data: [{% for dataPoint in project.daily_statistics %}
+        [
+            {{dataPoint.day_timestamp * 1000}},
+            {{dataPoint.host_total_credit|round}}
+        ],{% endfor %}]
+    }]
+});
+
+Highcharts.chart('{{host}}_{{project.master_url}}_avg_chart', {
+    title: {
+        text: ''
+    },
+    yAxis: {
+        title: {
+            text: ''
+        }
+    },
+    xAxis: {
+        type: 'datetime',
+        tickInterval: 7 * 24 * 3600 * 1000,
+        tickWidth: 0,
+        gridLineWidth: 1,
+        minorGridLineDashStyle: 'dash',
+        minorTickInterval: 'auto'
+    },
+    credits: {
+        enabled: false
+    },
+    series: [{
+        name: 'Average Credit',
+        type: 'spline',
+        marker: {
+            radius: 2
+        },
+        data: [{% for dataPoint in project.daily_statistics %}
+        [
+            {{dataPoint.day_timestamp * 1000}},
+            {{dataPoint.host_expavg_credit|round}}
+        ],{% endfor %}]
+    }]
+});
+{% endfor %}
+{% endfor %}
+</script>
+{% endblock %}

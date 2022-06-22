@@ -1,0 +1,71 @@
+{% extends 'base.html' %}
+
+{% block title %}BOINC Cluster - Dashboard{% endblock %}
+{% block content %}
+<div class="row pb-3">
+    <div class="col-md-3">
+        <div class="card bg-success text-white">
+            <div class="card-body">
+                <div class="icon">
+                    <i class="fa fa-tasks"></i>
+                </div>
+                <h3>{{tasks|length}}</h3>
+                <p>Tasks</p>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card bg-aqua text-white">
+            <div class="card-body">
+                <div class="icon">
+                    <i class="fa fa-desktop"></i>
+                </div>
+                <h3>{{status|length}}</h3>
+                <p>Hosts</p>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card bg-aqua text-white">
+            <div class="card-body">
+                <div class="icon">
+                    <i class="fa fa-cog"></i>
+                </div>
+                <h3>{{total_unique_projects}}</h3>
+                <p>Projects</p>
+            </div>
+        </div>
+    </div>
+</div>
+<div class="row">
+    <div class="col-6">
+        <table data-show-columns="true" class="table table-sm table-bordered table-hover" data-toggle="table">
+            <thead>
+                <tr>
+                    <th data-field="host" rowspan="2">Host</th>
+                    <th data-width="50" data-field="network_status" rowspan="2">
+                        Network<br>
+                        Status</th>
+                    <th colspan="3">Modes</th>
+                </tr>
+                <tr>
+                    <th data-width="50" data-field="task_mode">Task</th>
+                    <th data-width="50" data-field="network_mode">Network</th>
+                    <th data-width="50" data-field="gpu_mode">GPU</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for host,state in status.items() %}
+                <tr>
+                    <td>{{host}}</td>
+                    <td><i class="fa {{state.network_status_icon}}"></i></td>
+                    <td><i class="fa {{state.task_mode_icon}}"></i></td>
+                    <td><i class="fa {{state.network_mode_icon}}"></i></td>
+                    <td><i class="fa {{state.gpu_mode_icon}}"></i></td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endblock %}

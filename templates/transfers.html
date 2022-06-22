@@ -1,0 +1,36 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="table-responsive">
+    <table class="table-sm table table-bordered table-hover">
+        <thead>
+            <tr>
+                <th>Host</th>
+                <th>Project</th>
+                <th>File</th>
+                <th>Progress</th>
+                <th>Size</th>
+                <th>Elapsed</th>
+                <th>Speed</th>
+                <th>Status</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for host,transfers in transfers.items() %}
+            {% for transfer in transfers %}
+            <tr>
+                <td>{{host}}</td>
+                <td>{{transfer.project_name}}</td>
+                <td>{{transfer.name}}</td>
+                <td>To be calculated</td>
+                <td>{{transfer.nbytes}}</td>
+                <td>{{transfer.time_so_far}}</td>
+                <td>{{transfer.xfer_speed}}</td>
+                <td>perfect</td>
+            </tr>
+            {% endfor %}
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+{% endblock %}
