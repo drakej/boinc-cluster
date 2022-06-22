@@ -457,7 +457,7 @@ class Project(_Struct):
         self.sched_rpc_pending = 0
         self.send_time_stats_log = 0
         self.send_job_log = 0
-        
+
         self.njobs_success = 0
         self.njobs_error = 0
 
@@ -468,7 +468,7 @@ class Project(_Struct):
         self.rsc_backoff_time = None
         self.rsc_backoff_interval = None
 
-        self.dont_request_more_work = None
+        self.dont_request_more_work = False
 
         self.verify_files_on_app_start = None
 
@@ -478,9 +478,19 @@ class Project(_Struct):
         self.project_files_downloaded_time = 0.0
         self.project_dir = ""
 
+        self.suspended_via_gui = False
+
+        self.scheduler_rpc_in_progress = False
+        self.trickle_up_pending = False
+
+        self.ended = False
+        self.detach_when_done = False
+
         self.venue = None
 
-
+        self.disk_usage = None
+        self.disk_share = None
+        self.no_rsc_apps = None
 
     @classmethod
     def parse(cls, xml):
@@ -496,10 +506,131 @@ class Project(_Struct):
         buf = '%s:\n' % self.__class__.__name__
         for attr in self.__dict__:
             value = getattr(self, attr)
-            if attr in ['rec_time', 'user_create_time','host_create_time']:
+            if attr in ['rec_time', 'user_create_time', 'host_create_time']:
                 value = time.ctime(value)
             buf += '\t%s\t%r\n' % (attr, value)
         return buf
+
+
+class Statistics(_Struct):
+    ''' Wraps up the project specific statistics '''
+
+    def __init__(self):
+        self.project_statistics = []
+
+    @classmethod
+    def parse(cls, xml):
+        if not isinstance(xml, ElementTree.Element):
+            xml = ElementTree.fromstring(xml)
+
+        # parse main XML
+        statistics = super(Statistics, cls).parse(xml)
+
+        aux = []
+        for element in xml.getchildren():
+            aux.append(ProjectStatistics.parse(element))
+        statistics.project_statistics = aux
+
+        return statistics
+
+
+class ProjectStatistics(_Struct):
+    def __init__(self):
+        self.daily_statistics = []
+        self.master_url = ""
+
+    @classmethod
+    def parse(cls, xml):
+        if not isinstance(xml, ElementTree.Element):
+            xml = ElementTree.fromstring(xml)
+
+        # parse main XML
+        projectStatistics = super(ProjectStatistics, cls).parse(xml)
+
+        aux = []
+        for element in xml.getchildren():
+            if element.tag == 'daily_statistics':
+                aux.append(DailyStatistics.parse(element))
+        projectStatistics.daily_statistics = aux
+
+        return projectStatistics
+
+
+class DailyStatistics(_Struct):
+    def __init__(self):
+        self.day = None
+        self.day_timestamp = 0
+        self.user_total_credit = 0.0
+        self.user_expavg_credit = 0.0
+        self.host_total_credit = 0.0
+        self.host_expavg_credit = 0.0
+
+    @classmethod
+    def parse(cls, xml):
+        if not isinstance(xml, ElementTree.Element):
+            xml = ElementTree.fromstring(xml)
+
+        dailyStatistics = super(DailyStatistics, cls).parse(xml)
+        children = xml.getchildren()
+
+        for child in children:
+            if child.tag == 'day':
+                dailyStatistics.day = datetime.datetime.fromtimestamp(
+                    float(child.text))
+                dailyStatistics.day_timestamp = int(float(child.text))
+
+        return dailyStatistics
+
+
+class DiskUsageSummary(_Struct):
+    def __init__(self):
+        self.projects = []
+
+        self.d_total = 0
+        self.d_free = 0
+        self.d_boinc = 0
+        self.d_allowed = 0
+
+    @classmethod
+    def parse(cls, xml):
+        if not isinstance(xml, ElementTree.Element):
+            xml = ElementTree.fromstring(xml)
+
+        diskUsageSummary = super(DiskUsageSummary, cls).parse(xml)
+        children = xml.getchildren()
+
+        for child in children:
+            if child.tag == 'project':
+                diskUsageSummary.projects.append(DiskUsageProject.parse(child))
+
+        return diskUsageSummary
+
+
+class DiskUsageProject(_Struct):
+    def __init__(self):
+        self.master_url = ""
+        self.disk_usage = 0
+
+
+class FileTransfer(_Struct):
+    def __init__(self):
+        self.name = ""
+        self.project_url = ""
+        self.project_name = ""
+        self.nbytes = 0.0
+        self.uploaded = False
+        self.is_upload = False
+        self.sticky = False
+        self.pers_xfer_active = False
+        self.xfer_active = False
+        self.num_retries = 0
+        self.fire_request_time = 0.0
+        self.bytes_xferred = 0.0
+        self.file_offset = 0.0
+        self.xfer_speed = 0.0
+        self.hostname = ""
+        self.project_backoff = 0.0
+
 
 class Result(_Struct):
     ''' Also called "task" in some contexts '''
@@ -624,6 +755,126 @@ class Result(_Struct):
         return buf
 
 
+class WorkUnit(_Struct):
+    def __init__(self) -> None:
+
+        self.name = ""
+        self.app_name = ""
+        self.version_num = 0
+
+        self.rsc_fpops_est = 0.0
+        self.rsc_fpops_bound = 0.0
+        self.command_line = ""
+
+        self.file_refs = []
+
+        @classmethod
+        def parse(cls, xml):
+            if not isinstance(xml, ElementTree.Element):
+                xml = ElementTree.fromstring(xml)
+
+            workUnit = super(WorkUnit, cls).parse(xml)
+            children = xml.getchildren()
+
+            for child in children:
+                if child.tag == 'file_ref':
+                    workUnit.file_refs.append(FileRef.parse(child))
+
+            return workUnit
+
+
+class App(_Struct):
+    def __init__(self):
+
+        self.name = ""
+        self.user_friendly_name = ""
+        self.non_cpu_intensive = 0
+
+
+class FileRef(_Struct):
+    def __init__(self):
+
+        self.file_name = ""
+        self.main_program = False
+        self.open_name = ""
+
+
+class AppVersion(_Struct):
+    def __init__(self):
+
+        self.app_name = ""
+        self.version_num = 0
+        self.platform = ""
+        self.avg_ncpus = 0.0
+        self.flops = 0.0
+        self.plan_class = ""
+        self.api_version = ""
+        self.file_refs = []
+
+    @classmethod
+    def parse(cls, xml):
+        if not isinstance(xml, ElementTree.Element):
+            xml = ElementTree.fromstring(xml)
+
+        appVersion = super(AppVersion, cls).parse(xml)
+        children = xml.getchildren()
+
+        for child in children:
+            if child.tag == 'file_ref':
+                appVersion.file_refs.append(FileRef.parse(child))
+
+        return appVersion
+
+
+class ClientState(_Struct):
+    def __init__(self):
+
+        self.host_info = None
+        self.have_cuda = False
+        self.have_ati = False
+
+        self.projects = []
+
+        self.apps = []
+        self.app_versions = []
+
+        self.results = []
+
+        self.work_units = []
+
+    @classmethod
+    def parse(cls, xml):
+        if not isinstance(xml, ElementTree.Element):
+            xml = ElementTree.fromstring(xml)
+
+        clientState = super(ClientState, cls).parse(xml)
+        children = xml.getchildren()
+
+        for child in children:
+            if child.tag == 'host_info':
+                clientState.host_info = HostInfo.parse(child)
+
+            if child.tag == 'project':
+                clientState.projects.append(Project.parse(child))
+
+            if child.tag == 'result':
+                clientState.results.append(Result.parse(child))
+
+            if child.tag == 'app':
+                clientState.apps.append(App.parse(child))
+
+            if child.tag == 'app_version':
+                clientState.app_versions.append(AppVersion.parse(child))
+
+            if child.tag == 'workunit':
+                clientState.work_units.append(WorkUnit.parse(child))
+
+        # if clientState.host_info.domain_name == "desktop-jon":
+        #     print(clientState)
+
+        return clientState
+
+
 class BoincClient(object):
 
     def __init__(self, host="", passwd=None):
@@ -697,9 +948,33 @@ class BoincClient(object):
         ''' Get information about host hardware and usage. '''
         return HostInfo.parse(self.rpc.call('<get_host_info/>'))
 
+    def get_state(self):
+        return ClientState.parse(self.rpc.call('<get_state/>'))
+
+    def get_statistics(self):
+        return Statistics.parse(self.rpc.call('<get_statistics/>'))
+
+    def get_file_transfers(self):
+        transfers_xml = self.rpc.call('<get_file_transfers/>')
+
+        print(transfers_xml)
+
+        if not transfers_xml.tag == 'file_transfers':
+            return []
+
+        transfers = []
+
+        for transfer in list(transfers_xml):
+            transfers.append(FileTransfer.parse(transfer))
+
+        return transfers
+
     def get_tasks(self):
         ''' Same as get_results(active_only=False) '''
         return self.get_results(False)
+
+    def get_disk_usage(self):
+        return DiskUsageSummary.parse(self.rpc.call('<get_disk_usage/>'))
 
     def get_results(self, active_only=False):
         ''' Get a list of results.
@@ -709,7 +984,7 @@ class BoincClient(object):
             if it's not there, call get_state() again.
         '''
         reply = self.rpc.call("<get_results><active_only>%d</active_only></get_results>"
-                               % (1 if active_only else 0))
+                              % (1 if active_only else 0))
         if not reply.tag == 'results':
             return []
 
@@ -728,7 +1003,7 @@ class BoincClient(object):
         projects = []
         for item in list(reply):
             projects.append(Project.parse(item))
-        
+
         return projects
 
     def set_mode(self, component, mode, duration=0):
@@ -736,8 +1011,8 @@ class BoincClient(object):
             This method is not part of the original API.
             Valid components are 'run' (or 'cpu'), 'gpu', 'network' (or 'net')
         '''
-        component = component.replace('cpu','run')
-        component = component.replace('net','network')
+        component = component.replace('cpu', 'run')
+        component = component.replace('net', 'network')
         try:
             reply = self.rpc.call("<set_%s_mode>"
                                   "<%s/><duration>%f</duration>"
@@ -796,7 +1071,7 @@ def read_gui_rpc_password():
 
 
 if __name__ == '__main__':
-    with BoincClient(host="192.168.2.1",passwd="2f7b4b513d02f954cd22e8109c0bc0c0") as boinc:
+    with BoincClient(host="", passwd="") as boinc:
         print(boinc.connected)
         print(boinc.authorized)
         print(boinc.version)
