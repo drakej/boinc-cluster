@@ -51,17 +51,6 @@ import socket
 # // NOTE: Failing to revert back to the original locale will cause
 # //   formatting failures for any software that has been localized or
 # //   displays localized data.
-#
-#
-# #if defined(_WIN32) && !defined(__STDWX_H__) && !defined(_BOINC_WIN_) && !defined(_AFX_STDAFX_H_)
-# #include "boinc_win.h"
-# #endif
-#
-# #ifdef _WIN32
-# #include "../version.h"
-# #else
-# #include "config.h"
-# #endif
 
 ''' Version number relates to the BOINC version this API was based on '''
 
@@ -73,19 +62,6 @@ BOINC_MINOR_VERSION = 0
 
 ''' Release part of BOINC version number '''
 BOINC_RELEASE = 65
-
-
-# #include "str_util.h"
-# #include "util.h"
-# #include "error_numbers.h"
-# #include "miofile.h"
-# #include "md5_file.h"
-# #include "network.h"
-
-
-# #include "common_defs.h"
-# #ifndef _COMMON_DEFS_
-# #define _COMMON_DEFS_
 
 # // #defines or enums that are shared by more than one BOINC component
 # // (e.g. client, server, Manager, etc.)
@@ -101,34 +77,6 @@ NETWORK_STATUS_LOOKUP_PENDING  = 3
 # struct TIME_STATS {
 class TimeStats(object):
     pass
-# // we maintain an exponentially weighted average of these quantities:
-#     double now;
-#         // the client's time of day
-#     double on_frac;
-#         // the fraction of total time this host runs the client
-#     double connected_frac;
-#         // of the time this host runs the client,
-#         // the fraction it is connected to the Internet,
-#         // or -1 if not known
-#     double cpu_and_network_available_frac;
-#         // of the time this host runs the client,
-#         // the fraction it is connected to the Internet
-#         // AND network usage is allowed (by prefs and user toggle)
-#         // AND CPU usage is allowed
-#     double active_frac;
-#         // of the time this host runs the client,
-#         // the fraction it is enabled to use CPU
-#         // (as determined by preferences, manual suspend/resume, etc.)
-#     double gpu_active_frac;
-#         // same, GPU
-#     double client_start_time;
-#     double previous_uptime;
-#         // duration of previous session
-#
-#     void write(MIOFILE&);
-#     int parse(XML_PARSER&);
-#     void print();
-# };
 
 # struct VERSION_INFO {
 class VersionInfo(object):
@@ -159,11 +107,6 @@ class VersionInfo(object):
     def __str__(self):
         return "%d.%d.%d" % (self.major, self.minor, self.release)
 
-# #endif common_defs.h
-
-# #include "diagnostics.h"
-
-
 # #include "parse.h"
 # struct XML_PARSER {
 class XmlParser(object):
@@ -176,124 +119,8 @@ class XmlParser(object):
     def init(self, mf):
         self.f = mf
 
-
-# #include "gui_rpc_client.h"
-# #ifndef _GUI_RPC_CLIENT_H_
-# #define _GUI_RPC_CLIENT_H_
-# #include "cc_config.h"
-# #include "filesys.h"
-# #include "hostinfo.h"
-# #ifndef _HOSTINFO_
-# #define _HOSTINFO_
-#
-# // Description of a host's hardware and software.
-# // This is used a few places:
-# // - it's part of the client's state file, client_state.xml
-# // - it's passed in the reply to the get_host_info GUI RPC
-# // - it's included in scheduler RPC requests
-# //
-# // Other host-specific info is kept in
-# // TIME_STATS (on/connected/active fractions)
-# // NET_STATS (average network bandwidths)
-#
-# #include "miofile.h"
-# #include "coproc.h"
-#
-# // if you add fields, update clear_host_info()
-#
-# class HOST_INFO {
 class HostInfo(object):
     pass
-# public:
-#     int timezone;                 // local STANDARD time - UTC time (in seconds)
-#     char domain_name[256];
-#     char serialnum[256];
-#     char ip_addr[256];
-#     char host_cpid[64];
-#
-#     int p_ncpus;
-#     char p_vendor[256];
-#     char p_model[256];
-#     char p_features[1024];
-#     double p_fpops;
-#     double p_iops;
-#     double p_membw;
-#     double p_calculated;          // when benchmarks were last run, or zero
-#     bool p_vm_extensions_disabled;
-#
-#     double m_nbytes;              // Total amount of memory in bytes
-#     double m_cache;
-#     double m_swap;                // Total amount of swap space in bytes
-#
-#     double d_total;               // Total amount of disk in bytes
-#     double d_free;                // Total amount of free disk in bytes
-#
-#     char os_name[256];
-#     char os_version[256];
-#
-#     // the following is non-empty if VBox is installed
-#     //
-#     char virtualbox_version[256];
-#
-#     COPROCS coprocs;
-#
-# #ifdef ANDROID
-#     int battery_charge_pct;
-#     int battery_state;
-#     double battery_temperature_celsius;
-#     void get_battery_status();
-# #endif
-#
-#     HOST_INFO();
-#     int parse(XML_PARSER&, bool benchmarks_only = false);
-#     int write(MIOFILE&, bool include_net_info, bool include_coprocs);
-#     int parse_cpu_benchmarks(FILE*);
-#     int write_cpu_benchmarks(FILE*);
-#     void print();
-#
-#     bool host_is_running_on_batteries();
-# #ifdef __APPLE__
-#     bool users_idle(bool check_all_logins, double idle_time_to_run, double *actual_idle_time=NULL);
-# #else
-#     bool users_idle(bool check_all_logins, double idle_time_to_run);
-# #endif
-# #ifdef ANDROID
-#     bool host_wifi_online();
-# #endif
-#     int get_host_info();
-#     int get_host_battery_charge();
-#     int get_host_battery_state();
-#     int get_local_network_info();
-#     int get_virtualbox_version();
-#     void clear_host_info();
-#     void make_random_string(const char* salt, char* out);
-#     void generate_host_cpid();
-# };
-#
-# #ifdef __APPLE__
-# #ifdef __cplusplus
-# extern "C" {
-# #endif
-#
-# #include <IOKit/hidsystem/IOHIDLib.h>
-# #include <IOKit/hidsystem/IOHIDParameter.h>
-# #include <IOKit/hidsystem/event_status_driver.h>
-#
-# bool isDualGPUMacBook();
-#
-# // Apple has removed NxIdleTime() beginning with OS 10.6, so we must try
-# // loading it at run time to avoid a link error.  For details, please see
-# // the comments in the __APPLE__ version of HOST_INFO::users_idle() in
-# // client/hostinfo_unix.cpp.
-# typedef double (*nxIdleTimeProc)(NXEventHandle handle);
-# #ifdef __cplusplus
-# }    // extern "C"
-# #endif
-#
-# extern NXEventHandle gEventHandle;
-# #endif
-#
-# #endif
 
 # #include "miofile.h"
 # #include "network.h"
@@ -1104,50 +931,13 @@ class CcStatus(object):
 
         raise BoincException("ERR_XML_PARSE")
 
-
-    #void print();
-# };
-
-
-#
-# struct SIMPLE_GUI_INFO {
-#     std::vector<PROJECT*> projects;
-#     std::vector<RESULT*> results;
-#     void print();
-# };
-#
-# struct DAILY_XFER {
-#     int when;
-#     double up;
-#     double down;
-#
-#     int parse(XML_PARSER&);
-# };
-#
-# struct DAILY_XFER_HISTORY {
-#     std::vector <DAILY_XFER> daily_xfers;
-#     int parse(XML_PARSER&);
-#     void print();
-# };
-
-
-# struct RPC_CLIENT {
 class RpcClient(object):
 
     def __init__(self):
-#     int sock;
         self.sock = -1
-
-#     double timeout;
         self.timeout = 30
-
-#     double start_time;
-#     bool retry;
-#     sockaddr_storage addr;
         self.addr = None
 
-
-    #int send_request(const char*);
     def send_request(self, p):
         ''' Send a XML request to socket, properly enclosed in GUI RPC format
         '''
@@ -1163,11 +953,6 @@ class RpcClient(object):
             #DIFF: throws original exception instead of "ERR_WRITE"
             raise
 
-
-    #// get reply from server.  Caller must free buf
-    #//
-    #int get_reply(char*&);
-    #DIFF: instead of int get_reply(char*&), char* get_reply(void)
     def get_reply(self):
         ''' Read reply from socket and return result as string
         '''
@@ -1495,30 +1280,28 @@ def read_gui_rpc_password():
 
 # Unit tests
 if __name__ == "__main__":
-    print "read_gui_rpc_password(): '%s'" % read_gui_rpc_password()
+    print("read_gui_rpc_password(): '%s'" % read_gui_rpc_password())
     rpc = RpcClient()
 
     rpc.get_ip_addr('', 0)
-    print "get_ip_addr('', 0):", rpc.addr
+    print("get_ip_addr('', 0):", rpc.addr)
     rpc.get_ip_addr('boinc.berkeley.edu', 0)
-    print "get_ip_addr('boinc.berkeley.edu', 0):", rpc.addr
+    print( "get_ip_addr('boinc.berkeley.edu', 0):", rpc.addr)
     rpc.get_ip_addr('boinc.berkeley.edu', 80)
-    print "get_ip_addr('boinc.berkeley.edu', 80):", rpc.addr
-
+    print("get_ip_addr('boinc.berkeley.edu', 80):", rpc.addr)
     rpc.init('boinc.berkeley.edu', 80)
-    print "init('boinc.berkeley.edu', 80):", rpc.sock
+    print("init('boinc.berkeley.edu', 80):", rpc.sock)
     rpc.init('')
-    print "init(''):", rpc.sock
+    print("init(''):", rpc.sock)
 
     version = rpc.exchange_versions()
-    print "version: %d.%d.%d" % (version.major, version.minor, version.release)
-
+    print("version: %d.%d.%d" % (version.major, version.minor, version.release))
     status = rpc.get_cc_status()
-    print "get_cc_status:"
+    print("get_cc_status:")
     for item in status.__dict__:
-        print '\t%s\t%s' % (item, getattr(status, item))
+        print('\t%s\t%s' % (item, getattr(status, item)))
 
     state = rpc.get_state()
-    print "get_state:"
+    print("get_state:")
     for line in state:
-        print '\t%s' % line.rstrip()
+        print('\t%s' % line.rstrip())
