@@ -411,7 +411,7 @@ def updateTasks():
                 'projectURL': task.project_url,
                 'percent': percent_complete,
                 'elapsedTime': elapsedTime,
-                'deadline': deadline.strftime("%a %d %b %Y %I:%M:%S %p %Z"),
+                'deadline': int(deadline.timestamp() * 1000),
                 'remaining': remaining,
                 'name': task.name,
                 'application': friendly_name,
