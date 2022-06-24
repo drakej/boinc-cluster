@@ -18,8 +18,8 @@
 </table>
 {% endblock %}
 {% block script %}
+<script src="{{ url_for('static', filename='js/datatable.duration.sort.js') }}"></script>
 <script type="text/javascript">
-
 
     $(document).ready(function () {
 
@@ -40,9 +40,9 @@
                     }
                 },
                 { data: "status" },
-                { data: "elapsedTime", className: "text-end" },
-                { data: "remaining", className: "text-end" },
-                { data: "deadline", className: "text-end" },
+                { data: "elapsedTime", className: "text-end", orderDataType: "moment-duration" },
+                { data: "remaining", className: "text-end", orderDataType: "moment-duration" },
+                { data: "deadline", render: DataTable.render.datetime('ddd DD MMM YYYY hh:mm:ss A'), className: "text-end" },
                 { data: "application" },
                 { data: "name" }
             ]
