@@ -666,7 +666,7 @@ class Statistics(_Struct):
         statistics = super(Statistics, cls).parse(xml)
 
         aux = []
-        for element in xml.getchildren():
+        for element in list(xml):
             aux.append(ProjectStatistics.parse(element))
         statistics.project_statistics = aux
 
@@ -687,7 +687,7 @@ class ProjectStatistics(_Struct):
         projectStatistics = super(ProjectStatistics, cls).parse(xml)
 
         aux = []
-        for element in xml.getchildren():
+        for element in list(xml):
             if element.tag == 'daily_statistics':
                 aux.append(DailyStatistics.parse(element))
         projectStatistics.daily_statistics = aux
@@ -710,7 +710,7 @@ class DailyStatistics(_Struct):
             xml = ElementTree.fromstring(xml)
 
         dailyStatistics = super(DailyStatistics, cls).parse(xml)
-        children = xml.getchildren()
+        children = list(xml)
 
         for child in children:
             if child.tag == 'day':
@@ -914,7 +914,7 @@ class WorkUnit(_Struct):
                 xml = ElementTree.fromstring(xml)
 
             workUnit = super(WorkUnit, cls).parse(xml)
-            children = xml.getchildren()
+            children = list(xml)
 
             for child in children:
                 if child.tag == 'file_ref':
@@ -957,7 +957,7 @@ class AppVersion(_Struct):
             xml = ElementTree.fromstring(xml)
 
         appVersion = super(AppVersion, cls).parse(xml)
-        children = xml.getchildren()
+        children = list(xml)
 
         for child in children:
             if child.tag == 'file_ref':
@@ -988,7 +988,7 @@ class ClientState(_Struct):
             xml = ElementTree.fromstring(xml)
 
         clientState = super(ClientState, cls).parse(xml)
-        children = xml.getchildren()
+        children = list(xml)
 
         for child in children:
             if child.tag == 'host_info':
