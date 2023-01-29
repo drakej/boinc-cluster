@@ -1138,6 +1138,22 @@ class BoincClient(object):
 
         return results
 
+    def add_account(self, url="", email="", password=""):
+        '''
+        '''
+        password_hash = hashlib.md5(email.encode(
+            'utf-8')+password.encode('utf-8')).hexdigest().lower()
+
+        reply = self.rpc.call("<create_account>\n"
+                              "<url>%s</url>\n"
+                              "<email_addr>%s</email_addr>\n"
+                              "<passwd_hash>%s</passwd_hash>\n"
+                              "<user_name>%s</user_name>\n"
+                              "<team_name>%s</team_name>\n"
+                              "<consented_to_terms/>"
+                              "</create_account>\n" % (url, email, password_hash, None, None))
+
+        return reply
     def get_projects(self):
         reply = self.rpc.call("<get_project_status/>")
 
