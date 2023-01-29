@@ -1,21 +1,23 @@
 {% extends 'base.html' %}
 
 {% block content %}
-<table id="tasks_table" class="table table-sm table-bordered">
-    <thead>
-        <tr>
-            <th class="nowrap">Host</th>
-            <th class="nowrap">Project</th>
-            <th class="nowrap">Progress</th>
-            <th class="nowrap">Status</th>
-            <th class="nowrap">Elapsed</th>
-            <th class="nowrap">Remaining</th>
-            <th class="nowrap">Deadline</th>
-            <th class="nowrap">Application</th>
-            <th>Name</th>
-        </tr>
-    </thead>
-</table>
+<div class="container-fluid bg-white p-3">
+    <table id="tasks_table" class="table table-sm table-bordered">
+        <thead>
+            <tr>
+                <th class="nowrap">Host</th>
+                <th class="nowrap">Project</th>
+                <th class="nowrap">Progress</th>
+                <th class="nowrap">Status</th>
+                <th class="nowrap">Elapsed</th>
+                <th class="nowrap">Remaining</th>
+                <th class="nowrap">Deadline</th>
+                <th class="nowrap">Application</th>
+                <th>Name</th>
+            </tr>
+        </thead>
+    </table>
+</div>
 {% endblock %}
 {% block script %}
 <script src="{{ url_for('static', filename='js/datatable.duration.sort.js') }}"></script>
@@ -27,8 +29,8 @@
             "ajax": '{{ url_for('tasksLive') }}',
             "pageLength": 25,
             "columns": [
-                { data: "hostname" },
-                { data: "projectName" },
+                { data: "hostname", className: "nowrap" },
+                { data: "projectName", className: "nowrap" },
                 {
                     data: "percent",
                     createdCell: function (td, value, rowData, row, col) {
@@ -37,14 +39,15 @@
                             + "style=\"overflow: visible !important; width: " + value + "%; background-color: #bfd8d8;\""
                             + "aria-valuenow=\"" + value + "\" aria-valuemin=\"0\" aria-valuemax=\"100\">"
                             + value + '%' + "</div></div>");
-                    }
+                    },
+                    className: "nowrap"
                 },
-                { data: "status" },
-                { data: "elapsedTime", className: "text-end", orderDataType: "moment-duration" },
-                { data: "remaining", className: "text-end", orderDataType: "moment-duration" },
-                { data: "deadline", render: DataTable.render.datetime('ddd DD MMM YYYY hh:mm:ss A'), className: "text-end" },
-                { data: "application" },
-                { data: "name" }
+                { data: "status", className: "nowrap" },
+                { data: "elapsedTime", className: "text-end nowrap", orderDataType: "moment-duration" },
+                { data: "remaining", className: "text-end nowrap", orderDataType: "moment-duration" },
+                { data: "deadline", render: DataTable.render.datetime('ddd DD MMM YYYY hh:mm:ss A'), className: "text-end nowrap" },
+                { data: "application", className: "nowrap" },
+                { data: "name", className: "nowrap" }
             ]
         });
 
