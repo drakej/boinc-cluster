@@ -36,7 +36,7 @@ TBD
 Requirements
 ------------
 
-- Python (tested in 3.8)
+- Python (tested in 3.10)
 - BOINC Client install accessible via TCP/IP LAN
 
 
@@ -64,8 +64,8 @@ The idea is to make the client API somewhat higher-lever and a bit more straight
 Written by
 ----------
 
-Rodigo Silva (MestreLion) <linux@rodrigosilva.com>
-Jonathan Drake (drakej)
+- Rodigo Silva (MestreLion) <linux@rodrigosilva.com>
+- Jonathan Drake (drakej)
 
 
 Licenses and Copyright
