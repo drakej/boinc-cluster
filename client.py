@@ -736,7 +736,7 @@ class DiskUsageSummary(_Struct):
             xml = ElementTree.fromstring(xml)
 
         diskUsageSummary = super(DiskUsageSummary, cls).parse(xml)
-        children = xml.getchildren()
+        children = list(xml)
 
         for child in children:
             if child.tag == 'project':
