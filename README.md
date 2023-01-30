@@ -19,19 +19,18 @@ The Solution
 The Approach
 ------------
 
-- `gui_rpc_client.py` is a re-write of `gui_rpc_client.{h,cpp}` in Python. Should provide the GUI_RPC API as faithfully as possible, in a Pythonic way, similar to what PyGTK/PyGI/PyGObject/gir bindings do with Gtk/GLib/etc libs. It starts as direct copy-and-paste of the C++ code as comments, and is progressively translated to Python code. C++ structs and enums are converted to classes, `class RpcClient()` being the port of `struct RPC_CLIENT`.
+- `rpc.py` is a re-write of `gui_rpc_client.{h,cpp}` in Python. Should provide the GUI_RPC API as faithfully as possible, in a Pythonic way, similar to what PyGTK/PyGI/PyGObject/gir bindings do with Gtk/GLib/etc libs. It starts as direct copy-and-paste of the C++ code as comments, and is progressively translated to Python code. C++ structs and enums are converted to classes, `class RpcClient()` being the port of `struct RPC_CLIENT`.
 
-- `client.py` is a conversion of `boinccmd`, not only from C++ to Python, but also from a command-line utility to an API library. Uses `gui_rpc_client.RpcClient` calls to provide an interface that closely matches the command-line options of `boinccmd`, ported as methods of a `BoincClient` class.
+- `client.py` is a conversion of `boinccmd`, not only from C++ to Python, but also from a command-line utility to an API library. Uses `rpc.RpcClient` calls to provide an interface that closely matches the command-line options of `boinccmd`, ported as methods of a `BoincClient` class.
 
 - `boinccluster.py` is the Flask application code which utilizes the BOINC client code in client.py which in turn uses rpc.py
 
-- Since API and App Indicator are distinct, in the future they they can be packaged separately: API as a library package named `python-boinc-gui-rpc` or similar, installed somewhere in `PYTHONPATH`, while the app indicator monitor can be, for example `boinc-monitor` or `boinc-indicator`. Indicator depends on API and recommends `boinc-manager`, and API depends on `boinc-client`.
-
+- Since API and BOINC Cluster Flask application are distinct, in the future they they can be packaged separately and most likely will be when I find the time to isolate and ensure that code is of sufficient quality.
 
 The Challenges
 --------------
 
-TBD
+- Dealing with timeouts when a client is offline or not available. There's a balance to be struct right now since the code isn't aware of if it's attempted a connection prior to each attempt. Currently it's hardcoded in `rpc.py` but I plan to move it to the configuration long term and implement a way to detect the host is offline and stop attempting connections.
 
 Requirements
 ------------
@@ -47,13 +46,13 @@ Package and modules names are not set in stone yet. Actually, API is still a non
 
 For the client API (emulating the options of `boinccmd`):
 
-	from boinc.client import BoincClient
+	from client import BoincClient
 	bc = BoincClient()
 	status = bc.get_cc_status()
 
 For the XML GUI_RPC API:
 
-	from boinc.gui_rpc_client import RpcClient
+	from rpc import RpcClient
 	rpc = RpcClient()
 	rpc.init()
 	status = rpc.get_status()
