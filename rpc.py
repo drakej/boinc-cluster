@@ -22,6 +22,11 @@
 
 import socket
 from xml.etree import ElementTree
+import logging
+
+LOGGER = logging.getLogger('boinc-cluster')
+
+LOGGER.setLevel(logging.DEBUG)
 
 GUI_RPC_HOSTNAME = None  # localhost
 GUI_RPC_PORT = 31416
@@ -117,6 +122,8 @@ class Rpc(object):
         #req = '\n'.join(str(req).strip().split('\\n'))
 
         # print(req)
+
+        LOGGER.debug("RPC %s call made" % (request))
 
         if text_output:
             return req
