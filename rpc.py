@@ -30,7 +30,7 @@ LOGGER.setLevel(logging.DEBUG)
 
 GUI_RPC_HOSTNAME = None  # localhost
 GUI_RPC_PORT = 31416
-GUI_RPC_TIMEOUT = 10
+GUI_RPC_TIMEOUT = 5
 
 
 class Rpc(object):
@@ -119,9 +119,6 @@ class Rpc(object):
 
         # unpack reply (remove root tag, ie: first and last lines)
         req = b"\n".join(req.strip().rsplit(b"\n")[1:-1])
-        #req = '\n'.join(str(req).strip().split('\\n'))
-
-        # print(req)
 
         LOGGER.debug("RPC %s call made" % (request))
 
