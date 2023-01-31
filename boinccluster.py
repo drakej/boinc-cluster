@@ -1,17 +1,23 @@
 #!/usr/bin/python3
 
+from ctypes import sizeof
 import json
 import socket
 from collections import OrderedDict
 import time
-from flask import Flask, render_template
+from flask import Flask, render_template, request
 from datetime import datetime, timedelta
 import client
 import configparser
 
-#app = Flask(__name__)
+import logging
+from flask.logging import default_handler
 
 # Flask's magic create_app pattern
+LOGGER = logging.getLogger('boinc-cluster')
+
+LOGGER.addHandler(default_handler)
+LOGGER.setLevel(logging.INFO)
 
 
 def create_app(test_config=None):
@@ -282,13 +288,10 @@ def updateHosts():
                 elif len(hostInfo.coprocs) > 1:
                     gpu = ""
 
-                    print(hostInfo.coprocs)
+                    LOGGER.debug(f"Coprocessors: {hostInfo.coprocs}")
 
                     for proc in hostInfo.coprocs:
                         gpu = "%s " % proc.name
-
-                # print(hostInfo.coprocs)
-                print(gpu)
 
                 hostMap[host] = {
                     'computerID': hostInfo.host_cpid,
@@ -324,7 +327,7 @@ def updateTasks():
 
             hostTasks = boincClient.get_results()
 
-            #print("%s: %d" % (host, len(hostTasks)))
+            LOGGER.info(f"{host}: {len(hostTasks)}")
         except (socket.timeout, OSError) as timeout:
             print(timeout)
             continue
