@@ -26,8 +26,6 @@ import logging
 
 LOGGER = logging.getLogger('boinc-cluster')
 
-LOGGER.setLevel(logging.DEBUG)
-
 GUI_RPC_HOSTNAME = None  # localhost
 GUI_RPC_PORT = 31416
 GUI_RPC_TIMEOUT = 5
@@ -126,14 +124,3 @@ class Rpc(object):
             return req
         else:
             return ElementTree.fromstring(req)
-
-
-if __name__ == '__main__':
-    with Rpc(text_output=True) as rpc:
-        # print(rpc.call('<exchange_versions/>'))
-        # print(rpc.call('<get_cc_status/>'))
-        # print(rpc.call('<get_results/>'))
-        # print(rpc.call('<get_host_info/>'))
-        # print(rpc.call("<get_project_status/>"))
-        print(rpc.call("<get_state/>"))
-        # print(rpc.call('<run_benchmarks/>'))
