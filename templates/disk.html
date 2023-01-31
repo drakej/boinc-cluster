@@ -3,7 +3,7 @@
 {% block content %}
 {% for host,disk_usage in disk_usage_summaries.items() %}
 <h5>{{host}}</h5>
-<div class="row">
+<div class="row my-3">
     <div class="col-md-6">
         <div id="{{host}}_chart_summary"></div>
     </div>
@@ -14,129 +14,131 @@
 {% endfor %}
 {% endblock %}
 {% block script %}
-<script src="{{ url_for('static', filename='js/highcharts.js') }}"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/highcharts/10.3.3/highcharts.js"
+    integrity="sha512-8cJ3Lf1cN3ld0jUEZy26UOg+A5YGLguP6Xi6bKLyYurrxht+xkLJ9oH9rc7pvNiYsmYuTvpe3wwS6LriK/oWDg=="
+    crossorigin="anonymous" referrerpolicy="no-referrer"></script>
 <script type="text/javascript">
-// Build the chart
-{% for host,disk_usage in disk_usage_summaries.items() %}
-Highcharts.chart('{{host}}_chart_summary', {
-    chart: {
-        plotBackgroundColor: null,
-        plotBorderWidth: null,
-        plotShadow: false,
-        type: 'pie',
-        height: (9 / 16 * 100) + '%'
-    },
-    title: {
-        text: ''
-    },
-    tooltip: {
-        pointFormat: '{series.name}: <b>{point.percentage:.1f}%</b>'
-    },
-    accessibility: {
-        point: {
-            valueSuffix: '%'
-        }
-    },
-    credits: {
-        enabled: false
-    },
-    plotOptions: {
-        pie: {
-            allowPointSelect: true,
-            cursor: 'pointer',
-            dataLabels: {
-                enabled: false
-            },
-            showInLegend: true,
-            startAngle: 90
-        }
-    },
-    legend: {
-        layout: 'vertical',
-        align: 'left',
-        verticalAlign: 'top',
-        borderWidth: 1,
-        borderRadius: 5,
-        borderColor: '#EEEEEE',
+    // Build the chart
+    {% for host, disk_usage in disk_usage_summaries.items() %}
+    Highcharts.chart('{{host}}_chart_summary', {
+        chart: {
+            plotBackgroundColor: null,
+            plotBorderWidth: null,
+            plotShadow: false,
+            type: 'pie',
+            height: (9 / 16 * 100) + '%'
+        },
         title: {
-            text: 'Total Disk Usage'
-        }
-    },
-    series: [{
-        name: 'Total Disk Usage',
-        colorByPoint: true,
-        data: [{
-            name: "used by BOINC: {{disk_usage.boinc|formatbytes}}",
-            y: {{disk_usage.boinc}}
+            text: ''
+        },
+        tooltip: {
+            pointFormat: '{series.name}: <b>{point.percentage:.1f}%</b>'
+        },
+        accessibility: {
+            point: {
+                valueSuffix: '%'
+            }
+        },
+        credits: {
+            enabled: false
+        },
+        plotOptions: {
+            pie: {
+                allowPointSelect: true,
+                cursor: 'pointer',
+                dataLabels: {
+                    enabled: false
+                },
+                showInLegend: true,
+                startAngle: 90
+            }
+        },
+        legend: {
+            layout: 'vertical',
+            align: 'left',
+            verticalAlign: 'top',
+            borderWidth: 1,
+            borderRadius: 5,
+            borderColor: '#EEEEEE',
+            title: {
+                text: 'Total Disk Usage'
+            }
+        },
+        series: [{
+            name: 'Total Disk Usage',
+            colorByPoint: true,
+            data: [{
+                name: "used by BOINC: {{disk_usage.boinc|formatbytes}}",
+                y: {{ disk_usage.boinc }}
         }, {
-            name: 'Free, available to BOINC: {{disk_usage.free|formatbytes}}',
-            y: {{disk_usage.available}}
+        name: 'Free, available to BOINC: {{disk_usage.free|formatbytes}}',
+        y: {{ disk_usage.available }}
         }, {
             name: 'Free, not available to BOINC: {{disk_usage.not_available|formatbytes}}',
-            y: {{disk_usage.not_available}}
+            y: {{ disk_usage.not_available }}
         }, {
             name: 'Used by other programs: {{disk_usage.other|formatbytes}}',
-            y: {{disk_usage.other}}
+            y: {{ disk_usage.other }}
         }]
     }]
 });
-Highcharts.chart('{{host}}_chart_projects', {
-    chart: {
-        plotBackgroundColor: null,
-        plotBorderWidth: null,
-        plotShadow: false,
-        type: 'pie',
-        height: (9 / 16 * 100) + '%'
-    },
-    title: {
-        text: ''
-    },
-    tooltip: {
-        pointFormat: '{series.name}: <b>{point.percentage:.1f}%</b>'
-    },
-    accessibility: {
-        point: {
-            valueSuffix: '%'
-        }
-    },
-    credits: {
-        enabled: false
-    },
-    plotOptions: {
-        pie: {
-            allowPointSelect: true,
-            cursor: 'pointer',
-            dataLabels: {
-                enabled: false
-            },
-            showInLegend: true,
-            startAngle: 90,
-            minSize: 1000
-        }
-    },
-    legend: {
-        layout: 'vertical',
-        align: 'left',
-        verticalAlign: 'top',
-        borderWidth: 1,
-        borderRadius: 5,
-        borderColor: '#EEEEEE',
+    Highcharts.chart('{{host}}_chart_projects', {
+        chart: {
+            plotBackgroundColor: null,
+            plotBorderWidth: null,
+            plotShadow: false,
+            type: 'pie',
+            height: (9 / 16 * 100) + '%'
+        },
         title: {
-            text: 'Disk Usage by Project'
-        }
-    },
-    series: [{
-        name: 'Disk Usage by Project',
-        colorByPoint: true,
-        data: [
-            {% for project in disk_usage.projects %}
+            text: ''
+        },
+        tooltip: {
+            pointFormat: '{series.name}: <b>{point.percentage:.1f}%</b>'
+        },
+        accessibility: {
+            point: {
+                valueSuffix: '%'
+            }
+        },
+        credits: {
+            enabled: false
+        },
+        plotOptions: {
+            pie: {
+                allowPointSelect: true,
+                cursor: 'pointer',
+                dataLabels: {
+                    enabled: false
+                },
+                showInLegend: true,
+                startAngle: 90,
+                minSize: 1000
+            }
+        },
+        legend: {
+            layout: 'vertical',
+            align: 'left',
+            verticalAlign: 'top',
+            borderWidth: 1,
+            borderRadius: 5,
+            borderColor: '#EEEEEE',
+            title: {
+                text: 'Disk Usage by Project'
+            }
+        },
+        series: [{
+            name: 'Disk Usage by Project',
+            colorByPoint: true,
+            data: [
+                {% for project in disk_usage.projects %}
             {
             name: "{{project.name}}: {{project.disk_usage|formatbytes}}",
-            y: {{project.disk_usage}}
-            }{% if not loop.last %},{% endif %}
-            {% endfor %}]
+            y: {{ project.disk_usage }}
+            }{% if not loop.last %}, {% endif %}
+    {% endfor %}]
     }]
 });
-{% endfor %}
+    {% endfor %}
 </script>
 {% endblock %}
