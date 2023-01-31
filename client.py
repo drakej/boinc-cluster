@@ -26,6 +26,7 @@ import hashlib
 import datetime
 import time
 import logging
+import configparser
 
 from multiprocessing.pool import INIT
 from functools import total_ordering
@@ -34,6 +35,10 @@ from xml.etree import ElementTree
 LOGGER = logging.getLogger('boinc-cluster')
 
 GUI_RPC_PASSWD_FILE = "/etc/boinc-client/gui_rpc_auth.cfg"
+
+config = configparser.ConfigParser()
+
+config.read('config.ini')
 
 
 def setattrs_from_xml(obj, xml, attrfuncdict={}):
@@ -1046,6 +1051,9 @@ class BoincClient(object):
         self.version = None
         self.authorized = False
 
+        if 'version' in config['application']:
+            self.version = config['application']['version']
+
         # Informative, not authoritative. Records status of *last* RPC call,
         # but does not infer success about the *next* one.
         # Thus, it should be read *after* an RPC call, not prior to one
@@ -1094,7 +1102,14 @@ class BoincClient(object):
 
     def exchange_versions(self):
         ''' Return VersionInfo instance with core client version info '''
-        return VersionInfo.parse(self.rpc.call('<exchange_versions/>'))
+        version_parts = self.version.split('.')
+        LOGGER.debug(f'version_parts: {version_parts}')
+        return VersionInfo.parse(self.rpc.call("<exchange_versions>\n"
+                                               f"   <major>{version_parts[0]}</major>\n"
+                                               f"   <minor>{version_parts[1]}</minor>\n"
+                                               f"   <release>{version_parts[2]}</release>\n"
+                                               "   <name>boinc-cluster@home</name>\n"
+                                               "</exchange_versions>\n"))
 
     def get_cc_status(self):
         ''' Return CcStatus instance containing basic status, such as
