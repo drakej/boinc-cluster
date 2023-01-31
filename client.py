@@ -260,6 +260,24 @@ class RunMode(Enum):
             return super(RunMode, cls).name(v)
 
 
+def mode_name(mode):
+    modes = {
+        1: 'always',
+        2: 'auto',
+        3: 'never',
+        4: 'restore'
+    }
+
+    name = "unknown"
+
+    print("Mode input: %d" % mode)
+
+    if mode in modes:
+        name = modes[mode]
+
+    return name
+
+
 class CpuSched(Enum):
     ''' values of ACTIVE_TASK::scheduler_state and ACTIVE_TASK::next_scheduler_state
         "SCHEDULED" is synonymous with "executing" except when CPU throttling
