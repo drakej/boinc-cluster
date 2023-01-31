@@ -60,11 +60,19 @@ def create_app(test_config=None):
         total_unique_projects = 0
         unique_projects = {}
 
+        task_totals_by_status = {}
+
+        for task in TASKS:
+            if task['state'] not in task_totals_by_status:
+                task_totals_by_status[task['state']] = 1
+            else:
+                task_totals_by_status[task['state']] += 1
+
         for project in PROJECTS:
             if project.project_name not in unique_projects:
                 unique_projects[project.project_name] = True
                 total_unique_projects += 1
-        return render_template('./index.html', status=STATUS, tasks=TASKS, projects=PROJECTS, total_unique_projects=total_unique_projects)
+        return render_template('./index.html', status=STATUS, tasks=TASKS, projects=PROJECTS, total_unique_projects=total_unique_projects, task_totals_by_status=task_totals_by_status)
 
     @app.route('/statistics')
     def statistics():
@@ -118,6 +126,7 @@ transferMap = OrderedDict()
 appMap = {}
 appVersionMap = {}
 workUnitMap = {}
+tasksByHostMap = {}
 PROJECTS = []
 projectMapPopulated = False
 hostMapPopulated = False
@@ -137,9 +146,25 @@ network_status_icon_map = {
 runModeIconMap = {
     client.RunMode.ALWAYS: 'text-success fa-bolt',
     client.RunMode.AUTO: 'text-success fa-user-cog',
-    client.RunMode.NEVER: 'text-secondary fa-power-off',
-    client.RunMode.UNKNOWN: 'text-info fa-question',
-    client.RunMode.RESTORE: 'text-info fa-play-circle'
+    client.RunMode.NEVER: 'text-secondary fa-power-off'
+}
+
+runModeDescMap = {
+    client.RunMode.ALWAYS: 'Run always',
+    client.RunMode.AUTO: 'Run based on preferences',
+    client.RunMode.NEVER: 'Suspend'
+}
+
+gpuModeDescMap = {
+    client.RunMode.ALWAYS: 'Use GPU always',
+    client.RunMode.AUTO: 'Use GPU based on preferences',
+    client.RunMode.NEVER: 'Suspend GPU'
+}
+
+netModeDescMap = {
+    client.RunMode.ALWAYS: 'Network activity always',
+    client.RunMode.AUTO: 'Network activity based on preferences',
+    client.RunMode.NEVER: 'Suspend network activity'
 }
 
 
@@ -150,15 +175,18 @@ def updateStatus():
         try:
             boinc_client.connect()
         except (socket.timeout, OSError) as timeout:
-            print(timeout)
+            LOGGER.info(f"Timeout: {timeout}")
             continue
 
         if boinc_client.connected:
             host_state = boinc_client.get_cc_status()
 
             host_state.task_mode_icon = runModeIconMap[host_state.task_mode]
+            host_state.task_mode_desc = runModeDescMap[host_state.task_mode]
             host_state.network_mode_icon = runModeIconMap[host_state.network_mode]
+            host_state.network_mode_desc = netModeDescMap[host_state.network_mode]
             host_state.gpu_mode_icon = runModeIconMap[host_state.gpu_mode]
+            host_state.gpu_mode_desc = gpuModeDescMap[host_state.gpu_mode]
 
             host_state.network_status_icon = network_status_icon_map[host_state.network_status]
 
@@ -166,105 +194,96 @@ def updateStatus():
 
         boinc_client.disconnect()
 
-# Will only call one time for now to cache project results
 
+def updateProjects():
+    global PROJECTS, projectMap
 
-def updateProjects(cache=True):
-    global projectMapPopulated, PROJECTS, projectMap
-    if not projectMapPopulated:
-        PROJECTS = []
+    PROJECTS = []
 
-        for host, password in config['hosts'].items():
-            boincClient = client.BoincClient(host=host, passwd=password)
+    for host, password in config['hosts'].items():
+        boincClient = client.BoincClient(host=host, passwd=password)
 
-            try:
-                boincClient.connect()
-            except (socket.timeout, OSError) as timeout:
-                print(timeout)
-                continue
-            if boincClient.connected:
-                hostProjects = boincClient.get_projects()
+        try:
+            boincClient.connect()
+        except (socket.timeout, OSError) as timeout:
+            LOGGER.info(f"Timeout: {timeout}")
+            continue
+        if boincClient.connected:
+            hostProjects = boincClient.get_projects()
 
-                if hostProjects:
-                    for project in hostProjects:
-                        project.hostname = host
+            if hostProjects:
+                for project in hostProjects:
+                    project.hostname = host
 
-                        statii = []
+                    statii = []
 
-                        # if project.hostname == "desktop-jon.drakes.life":
-                        #     print(project)
+                    if project.suspended_via_gui:
+                        statii.append("Suspended by user")
 
-                        if project.suspended_via_gui:
-                            statii.append("Suspended by user")
+                    if project.dont_request_more_work:
+                        statii.append("Won't get new tasks")
 
-                        if project.dont_request_more_work:
-                            statii.append("Won't get new tasks")
+                    if project.ended:
+                        statii.append("Project ended - OK to remove")
 
-                        if project.ended:
-                            statii.append("Project ended - OK to remove")
+                    if project.detach_when_done:
+                        statii.append("Will remove when tasks done")
 
-                        if project.detach_when_done:
-                            statii.append("Will remove when tasks done")
+                    if project.sched_rpc_pending:
+                        statii.append("Scheduler request pending")
+                        statii.append(client.RPCReason.name(
+                            project.sched_rpc_pending))
 
-                        if project.sched_rpc_pending:
-                            statii.append("Scheduler request pending")
-                            statii.append(client.RPCReason.name(
-                                project.sched_rpc_pending))
+                    if project.scheduler_rpc_in_progress:
+                        statii.append("Scheduler request in progress")
 
-                        if project.scheduler_rpc_in_progress:
-                            statii.append("Scheduler request in progress")
+                    if project.trickle_up_pending:
+                        statii.append("Trickle up message pending")
 
-                        if project.trickle_up_pending:
-                            statii.append("Trickle up message pending")
+                    if project.min_rpc_time > time.time():
+                        statii.append("Communication deferred " +
+                                      str(timedelta(seconds=int(project.min_rpc_time - time.time()))))
 
-                        if project.min_rpc_time > time.time():
-                            statii.append("Communication deferred " +
-                                          str(timedelta(seconds=int(project.min_rpc_time - time.time()))))
-
-                        project.status = ', '.join(statii)
-                        PROJECTS.append(project)
-                        projectMap[project.master_url] = project
-            boincClient.disconnect()
-
-        if cache:
-            projectMapPopulated = True
+                    project.status = ', '.join(statii)
+                    PROJECTS.append(project)
+                    projectMap[project.master_url] = project
+        boincClient.disconnect()
 
 
 def updateState():
     global appMap, workUnitMap, workUnitMapPopulated, appMapPopulated
 
-    if not appMapPopulated:
+    # if not appMapPopulated:
+    for host, password in config['hosts'].items():
+        boincClient = client.BoincClient(host=host, passwd=password)
 
-        for host, password in config['hosts'].items():
-            boincClient = client.BoincClient(host=host, passwd=password)
+        try:
+            boincClient.connect()
+        except (socket.timeout, OSError) as timeout:
+            LOGGER.info(f"Host {host} Timeout: {timeout}")
+            continue
 
-            try:
-                boincClient.connect()
-            except (socket.timeout, OSError) as timeout:
-                print(timeout)
-                continue
-
-            if boincClient.connected:
-                stateInfo = boincClient.get_state()
+        if boincClient.connected:
+            stateInfo = boincClient.get_state()
 
             LOGGER.debug(f"State Info: {stateInfo}")
 
-                for app in stateInfo.apps:
-                    appMap[app.name] = {
-                        "user_friendly_name": app.user_friendly_name,
-                        "non_cpu_intensive": app.non_cpu_intensive
-                    }
+            for app in stateInfo.apps:
+                appMap[app.name] = {
+                    "user_friendly_name": app.user_friendly_name,
+                    "non_cpu_intensive": app.non_cpu_intensive
+                }
 
-                appMapPopulated = True
+            # appMapPopulated = True
 
-                for wu in stateInfo.work_units:
-                    workUnitMap[wu.name] = {
-                        "app_name": wu.app_name,
-                        "version_num": wu.version_num,
-                        "command_line": wu.command_line
-                    }
+            for wu in stateInfo.work_units:
+                workUnitMap[wu.name] = {
+                    "app_name": wu.app_name,
+                    "version_num": wu.version_num,
+                    "command_line": wu.command_line
+                }
 
-                workUnitMapPopulated = True
+            workUnitMapPopulated = True
 
 
 def updateHosts():
@@ -312,11 +331,12 @@ def updateHosts():
 
 
 def updateTasks():
-    global TASKS, projectMap
+    global TASKS, projectMap, tasksByHostMap
 
     updateProjects()
 
     TASKS = []
+    tasksByHostMap = {}
 
     for host, password in config['hosts'].items():
         boincClient = client.BoincClient(host=host, passwd=password)
@@ -326,6 +346,10 @@ def updateTasks():
             boincClient.connect()
 
             hostTasks = boincClient.get_results()
+
+            tasksByHostMap[host] = {'tasks': len(hostTasks)}
+
+            cc_status = boincClient.get_cc_status()
 
             LOGGER.info(f"{host}: {len(hostTasks)}")
         except (socket.timeout, OSError) as timeout:
@@ -339,12 +363,91 @@ def updateTasks():
             state = "Ready to start"
             elapsed = task.elapsed_time
 
-            if task.active_task_state and task.active_task_state == 1:
-                state = "Running"
-            elif task.estimated_cpu_time_remaining == 0:
+            project = projectMap[task.project_url]
+
+            throttled = cc_status.task_suspend_reason & 64
+
+            if task.coproc_missing:
+                state = "GPU Missing, "
+
+            if task.state == 0:
+                state = "New"
+            elif task.state == 1:
+                if task.ready_to_report:
+                    state = "Download failed"
+                else:
+                    state = "Downloading"
+
+                    if cc_status.network_suspend_reason:
+                        state += " (suspended - %s)" % cc_status.network_suspend_reason
+            elif task.state == 2:
+                if task.project_suspended_via_gui:
+                    state = "Project suspended by user"
+                elif task.suspended_via_gui:
+                    state = "Task suspended by user"
+                elif cc_status.task_suspend_reason and not throttled and task.active_task_state != 1:
+                    state = "Suspended - %s" % cc_status.task_suspend_reason
+                elif cc_status.gpu_suspend_reason:
+                    state = "GPU suspended - %s" % cc_status.gpu_suspend_reason
+                elif task.active_task:
+                    if task.too_large:
+                        state = "Waiting for memory"
+                    elif task.needs_shmem:
+                        state = "Waiting for shared memory"
+                    elif task.scheduler_state == 2:
+                        state = "Running"
+                        if project and project.non_cpu_intensive:
+                            state += " (non-CPU-intensive)"
+                    elif task.scheduler_state == 1:
+                        state = "Waiting to run"
+                    elif task.scheduler_state == 0:
+                        state = "Ready to start"
+                else:
+                    state = "Ready to start"
+                if task.scheduler_wait:
+                    if task.scheduler_wait_reason:
+                        state = "Postponed: %s" % task.scheduler_wait_reason
+                    else:
+                        state = "Postponed"
+                if task.network_wait:
+                    state = "Waiting for network access"
+            elif task.state == 3:
+                state = "Computation error"
+            elif task.state == 4:
+                if task.ready_to_report:
+                    state = "Upload failed"
+                else:
+                    state = "Uploading"
+                    if cc_status.network_suspend_reason:
+                        state += " (suspended - %s)" % cc_status.network_suspend_reason
+            elif task.state == 6:
+                if task.exit_status == 203:
+                    state = "Aborted by user"
+                elif task.exit_status == 202:
+                    state = "Aborted by project"
+                elif task.exit_status == 200:
+                    state = "Aborted: not started by deadline"
+                elif task.exit_status == 196:
+                    state = "Aborted: task disk limit exceeded"
+                elif task.exit_status == 197:
+                    state = "Aborted: run time limit exceeded"
+                elif task.exit_status == 198:
+                    state = "Aborted: memory limit exceeded"
+                else:
+                    state = "Aborted"
+            else:
+                if task.got_server_ack:
+                    state = "Acknowledged"
+                elif task.ready_to_report:
+                    state = "Ready to report"
+                else:
+                    state = "Error: invalid state '%d'" % task.state
+
+            # if task.active_task_state and task.active_task_state == 1:
+            #     state = "Running"
+            if task.estimated_cpu_time_remaining == 0:
                 percent_complete = 100
                 elapsed = task.final_elapsed_time
-                state = "Ready to report"
 
             resourceString = ""
 
@@ -415,7 +518,8 @@ def updateTasks():
                 'remaining': remaining,
                 'name': task.name,
                 'application': friendly_name,
-                'status': statusString
+                'status': statusString,
+                'state': state
             })
         boincClient.disconnect()
 
