@@ -620,6 +620,7 @@ class Project(_Struct):
         self.project_files_downloaded_time = 0.0
         self.project_dir = ""
 
+        self.non_cpu_intensive = False
         self.suspended_via_gui = False
 
         self.scheduler_rpc_in_progress = False
