@@ -20,15 +20,18 @@
 
 # Based on client/boinc_cmd.cpp
 
-from multiprocessing.pool import INIT
 import rpc
 import socket
 import hashlib
 import datetime
 import time
+import logging
+
+from multiprocessing.pool import INIT
 from functools import total_ordering
 from xml.etree import ElementTree
 
+LOGGER = logging.getLogger('boinc-cluster')
 
 GUI_RPC_PASSWD_FILE = "/etc/boinc-client/gui_rpc_auth.cfg"
 
@@ -1009,9 +1012,6 @@ class ClientState(_Struct):
             if child.tag == 'workunit':
                 clientState.work_units.append(WorkUnit.parse(child))
 
-        # if clientState.host_info.domain_name == "desktop-jon":
-        #     print(clientState)
-
         return clientState
 
 
@@ -1101,7 +1101,7 @@ class BoincClient(object):
     def get_file_transfers(self):
         transfers_xml = self.rpc.call('<get_file_transfers/>')
 
-        print(transfers_xml)
+        LOGGER.debug(f"Transfers XML: {transfers_xml}")
 
         if not transfers_xml.tag == 'file_transfers':
             return []
@@ -1154,6 +1154,7 @@ class BoincClient(object):
                               "</create_account>\n" % (url, email, password_hash, None, None))
 
         return reply
+
     def get_projects(self):
         reply = self.rpc.call("<get_project_status/>")
 
@@ -1174,12 +1175,13 @@ class BoincClient(object):
         component = component.replace('cpu', 'run')
         component = component.replace('net', 'network')
         try:
-            reply = self.rpc.call("<set_%s_mode>"
-                                  "<%s/><duration>%f</duration>"
-                                  "</set_%s_mode>"
-                                  % (component,
-                                     RunMode.name(mode).lower(), duration,
-                                     component))
+            reply = self.rpc.call(f"<set_{component}_mode>"
+                                  f"<{mode_name(mode)}/><duration>{duration}</duration>"
+                                  f"</set_{component}_mode>")
+
+            LOGGER.debug(f"<set_{component}_mode>"
+                         f"<{mode_name(mode)}/><duration>{duration}</duration>"
+                         f"</set_{component}_mode>")
             return (reply.tag == 'success')
         except socket.error:
             return False
@@ -1230,20 +1232,3 @@ def read_gui_rpc_password():
     except IOError:
         # Permission denied or File not found.
         pass
-
-
-if __name__ == '__main__':
-    with BoincClient(host="", passwd="") as boinc:
-        print(boinc.connected)
-        print(boinc.authorized)
-        print(boinc.version)
-        print(boinc.get_cc_status())
-        # for i, task in enumerate(boinc.get_results(True)):
-        #     print(i+1, task)
-        print(boinc.get_host_info())
-        # print boinc.run_benchmarks()
-        # print boinc.set_run_mode(RunMode.NEVER, 6)
-        # time.sleep(7)
-        # print boinc.set_gpu_mode(RunMode.NEVER, 6)
-        # time.sleep(7)
-        # print boinc.set_network_mode(RunMode.NEVER, 6)
