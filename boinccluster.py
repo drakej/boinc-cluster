@@ -247,7 +247,7 @@ def updateState():
             if boincClient.connected:
                 stateInfo = boincClient.get_state()
 
-                # print(stateInfo)
+            LOGGER.debug(f"State Info: {stateInfo}")
 
                 for app in stateInfo.apps:
                     appMap[app.name] = {
@@ -276,7 +276,7 @@ def updateHosts():
             try:
                 boincClient.connect()
             except (socket.timeout, OSError) as timeout:
-                print(timeout)
+                LOGGER.info(f"Timeout: {timeout}")
                 continue
 
             if boincClient.connected:
@@ -329,7 +329,7 @@ def updateTasks():
 
             LOGGER.info(f"{host}: {len(hostTasks)}")
         except (socket.timeout, OSError) as timeout:
-            print(timeout)
+            LOGGER.info(f"Timeout: {timeout}")
             continue
 
         for task in hostTasks:
@@ -356,7 +356,7 @@ def updateTasks():
             try:
                 projectName = projectMap[task.project_url].project_name
             except KeyError as error:
-                print(error)
+                LOGGER.error(f"Couldn't find key: {error}")
 
             deadline = datetime.fromtimestamp(task.report_deadline)
 
@@ -391,14 +391,11 @@ def updateTasks():
             else:
                 remaining = "--"
 
-            # print(appMap)
-
             app = ""
             friendly_name = ""
             version = 0xdeadbeef
 
             if task.wu_name in workUnitMap:
-                # print(workUnitMap[task.wu_name])
                 app = workUnitMap[task.wu_name]['app_name']
                 version_str = str(workUnitMap[task.wu_name]['version_num'])
                 version = '%s.%s' % (
@@ -432,7 +429,7 @@ def updateStatistics():
         try:
             boincClient.connect()
         except (socket.timeout, OSError) as timeout:
-            print(timeout)
+            LOGGER.info(f"Timeout: {timeout}")
             continue
 
         if boincClient.connected:
@@ -453,7 +450,7 @@ def updateDiskUsage():
         try:
             boincClient.connect()
         except (socket.timeout, OSError) as timeout:
-            print(timeout)
+            LOGGER.info(f"Timeout: {timeout}")
             continue
 
         if boincClient.connected:
@@ -488,7 +485,7 @@ def updateTransfers():
         try:
             boincClient.connect()
         except (socket.timeout, OSError) as timeout:
-            print(timeout)
+            LOGGER.info(f"Timeout: {timeout}")
             continue
 
         if boincClient.connected:
