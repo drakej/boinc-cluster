@@ -26,7 +26,7 @@ def create_app(test_config=None):
         mega = 1024*1024
         kilo = 1024
         unit = None
-        val = None
+        val = 0.0
 
         if size >= tera:
             unit = "TB"
