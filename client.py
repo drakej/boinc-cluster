@@ -275,7 +275,7 @@ def mode_name(mode):
 
     name = "unknown"
 
-    print("Mode input: %d" % mode)
+    LOGGER.debug(f"mode: {mode}")
 
     if mode in modes:
         name = modes[mode]
@@ -1068,11 +1068,15 @@ class BoincClient(object):
             self.connected = True
         except socket.error:
             self.connected = False
+
+            LOGGER.error(
+                f"Socket error, {self.hostname} client connectioned failed")
             return
         self.authorized = self.authorize(self.passwd)
         self.version = self.exchange_versions()
 
     def disconnect(self):
+        LOGGER.debug(f"{self.hostname} client disconnected...")
         self.rpc.disconnect()
 
     def authorize(self, password):
@@ -1116,11 +1120,16 @@ class BoincClient(object):
             CPU / GPU / Network active/suspended, etc
         '''
         if not self.connected:
+            LOGGER.info(
+                f"Not connected, {self.hostname} client connection attempt...")
             self.connect()
         try:
             return CcStatus.parse(self.rpc.call('<get_cc_status/>'))
-        except socket.error:
+        except socket.error as error:
             self.connected = False
+
+            LOGGER.error(
+                f"Socket error, {self.hostname} client connectioned failed")
 
     def get_host_info(self):
         ''' Get information about host hardware and usage. '''

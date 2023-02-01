@@ -118,7 +118,7 @@ class Rpc(object):
         # unpack reply (remove root tag, ie: first and last lines)
         req = b"\n".join(req.strip().rsplit(b"\n")[1:-1])
 
-        LOGGER.debug("RPC %s call made" % (request))
+        LOGGER.debug(f"RPC {request.tag} call made on host {self.hostname}")
 
         if text_output:
             return req
