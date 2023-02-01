@@ -1188,13 +1188,16 @@ class BoincClient(object):
             'utf-8')+password.encode('utf-8')).hexdigest().lower()
 
         reply = self.rpc.call("<create_account>\n"
-                              "<url>%s</url>\n"
-                              "<email_addr>%s</email_addr>\n"
-                              "<passwd_hash>%s</passwd_hash>\n"
-                              "<user_name>%s</user_name>\n"
-                              "<team_name>%s</team_name>\n"
-                              "<consented_to_terms/>"
-                              "</create_account>\n" % (url, email, password_hash, None, None))
+                              f"<url>{url}</url>\n"
+                              f"<email_addr>{email}</email_addr>\n"
+                              f"<passwd_hash>{password_hash}</passwd_hash>\n"
+                              f"<user_name></user_name>\n"
+                              f"<team_name></team_name>\n"
+                              "<consented_to_terms/>\n"
+                              "</create_account>\n")
+
+        LOGGER.debug(
+            f"create_account response for host {self.hostname}: {reply}")
 
         return reply
 

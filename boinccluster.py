@@ -335,6 +335,9 @@ def updateState():
                     "version_num": wu.version_num,
                     "command_line": wu.command_line
                 }
+        else:
+            LOGGER.info(
+                f"Connection lost, couldn't update state for host {host}")
 
 
 def updateHosts():
@@ -398,6 +401,7 @@ def updateTasks():
             boincClient = hostConnectionsMap[host]
         else:
             boincClient = client.BoincClient(host=host, passwd=password)
+            LOGGER.info(f"initiating connection for host {host}")
 
             hostConnectionsMap[host] = boincClient
 
@@ -563,8 +567,10 @@ def updateTasks():
                     version_str[0], version_str[1:])
 
             if app in appMap:
-                friendly_name = "%s %s (%s)" % (
-                    appMap[app]['user_friendly_name'], version, task.plan_class)
+                friendly_name = f"{appMap[app]['user_friendly_name']} {version}"
+
+                if task.plan_class:
+                    friendly_name += f" ({task.plan_class})"
 
             TASKS.append({
                 'hostname': host,
