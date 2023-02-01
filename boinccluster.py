@@ -136,6 +136,7 @@ def create_app(test_config=None):
 
     @app.route('/tasks')
     def tasks():
+        updateState()
         updateTasks()
         return render_template('./tasks.html', tasks=TASKS, hosts=config['hosts'])
 
@@ -152,6 +153,7 @@ def create_app(test_config=None):
 
     @app.route('/tasks/live')
     def tasksLive():
+        updateState()
         updateTasks()
         return json.dumps({"data": TASKS})
 
