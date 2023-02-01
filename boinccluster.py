@@ -23,7 +23,7 @@ LOGGER.setLevel(logging.INFO)
 def create_app(test_config=None):
     app = Flask(__name__)
 
-    updateState()
+    # updateState()
 
     @app.template_filter('formatbytes')
     def format_bytes(size):
@@ -80,12 +80,56 @@ def create_app(test_config=None):
         updateStatistics()
         return render_template('./statistics.html', statistics=statsMap)
 
-    @app.route('/computers')
+    @app.route('/computers', methods=['POST', 'GET'])
     def computers():
         updateHosts()
-        return render_template('./computers.html', hosts=hostMap)
+        if request.method == 'POST':
+            hosts = request.form.getlist('host')
+            run_modes = request.form.getlist('rmode')
+            gpu_modes = request.form.getlist('gmode')
+            network_modes = request.form.getlist('nmode')
 
-    @app.route('/projects')
+            for host in hosts:
+                h_index = hosts.index(host)
+
+                if host in hostConnectionsMap:
+                    boinc_client = hostConnectionsMap[host]
+                else:
+                    boinc_client = client.BoincClient(
+                        host=host, passwd=config['hosts'][host])
+
+                    hostConnectionsMap[host] = boinc_client
+
+                    try:
+                        boinc_client.connect()
+                    except (socket.timeout, OSError) as timeout:
+                        LOGGER.info(f"Timeout: {timeout}")
+
+                srm_result = boinc_client.set_run_mode(
+                    int(run_modes[h_index]))
+                sgm_result = boinc_client.set_gpu_mode(
+                    int(gpu_modes[h_index]))
+                snm_result = boinc_client.set_network_mode(
+                    int(network_modes[h_index]))
+
+                LOGGER.info(f"set_run_mode on {host} result: {srm_result}")
+                LOGGER.info(f"set_gpu_mode on {host} result: {sgm_result}")
+                LOGGER.info(
+                    f"set_network_mode on {host} result: {snm_result}")
+
+            # Ensure we update again since the state changed
+            updateHosts()
+
+        updateStatus()
+        updateTasks()
+
+        return render_template('./computers.html', hosts=hostMap,
+                               status=STATUS,
+                               runModes=runModeDescMap,
+                               gpuModes=gpuModeDescMap,
+                               netModes=netModeDescMap,
+                               tasksByHosts=tasksByHostMap)
+
     def projects():
         updateProjects(cache=False)
         return render_template('./projects.html', projects=PROJECTS)
@@ -126,13 +170,10 @@ transferMap = OrderedDict()
 appMap = {}
 appVersionMap = {}
 workUnitMap = {}
+hostConnectionsMap = {}
 tasksByHostMap = {}
+
 PROJECTS = []
-projectMapPopulated = False
-hostMapPopulated = False
-statsMapPopulated = False
-appMapPopulated = False
-appVersionMapPopulated = False
 TASKS = []
 STATUS = OrderedDict()
 
@@ -149,6 +190,7 @@ runModeIconMap = {
     client.RunMode.NEVER: 'text-secondary fa-power-off'
 }
 
+# TODO: Move to client.py
 runModeDescMap = {
     client.RunMode.ALWAYS: 'Run always',
     client.RunMode.AUTO: 'Run based on preferences',
@@ -169,17 +211,25 @@ netModeDescMap = {
 
 
 def updateStatus():
+    global hostConnectionsMap
     for host, password in config['hosts'].items():
-        boinc_client = client.BoincClient(host=host, passwd=password)
+        if host in hostConnectionsMap:
+            boincClient = hostConnectionsMap[host]
+        else:
+            boincClient = client.BoincClient(host=host, passwd=password)
 
-        try:
-            boinc_client.connect()
-        except (socket.timeout, OSError) as timeout:
-            LOGGER.info(f"Timeout: {timeout}")
-            continue
+            hostConnectionsMap[request.form['host']] = boincClient
 
-        if boinc_client.connected:
-            host_state = boinc_client.get_cc_status()
+            try:
+                boincClient.connect()
+            except (socket.timeout, OSError) as timeout:
+                LOGGER.info(f"Timeout: {timeout}")
+                continue
+
+        if boincClient.connected:
+            host_state = boincClient.get_cc_status()
+
+            LOGGER.debug(f'host_state: {host_state}')
 
             host_state.task_mode_icon = runModeIconMap[host_state.task_mode]
             host_state.task_mode_desc = runModeDescMap[host_state.task_mode]
@@ -192,22 +242,26 @@ def updateStatus():
 
             STATUS[host] = host_state
 
-        boinc_client.disconnect()
-
 
 def updateProjects():
-    global PROJECTS, projectMap
+    global PROJECTS, projectMap, hostConnectionsMap
 
     PROJECTS = []
 
     for host, password in config['hosts'].items():
-        boincClient = client.BoincClient(host=host, passwd=password)
+        if host in hostConnectionsMap:
+            boincClient = hostConnectionsMap[host]
+        else:
+            boincClient = client.BoincClient(host=host, passwd=password)
 
-        try:
-            boincClient.connect()
-        except (socket.timeout, OSError) as timeout:
-            LOGGER.info(f"Timeout: {timeout}")
-            continue
+            hostConnectionsMap[host] = boincClient
+
+            try:
+                boincClient.connect()
+            except (socket.timeout, OSError) as timeout:
+                LOGGER.info(f"Timeout: {timeout}")
+                continue
+
         if boincClient.connected:
             hostProjects = boincClient.get_projects()
 
@@ -247,34 +301,33 @@ def updateProjects():
                     project.status = ', '.join(statii)
                     PROJECTS.append(project)
                     projectMap[project.master_url] = project
-        boincClient.disconnect()
 
 
 def updateState():
-    global appMap, workUnitMap, workUnitMapPopulated, appMapPopulated
+    global appMap, workUnitMap, hostConnectionsMap
 
-    # if not appMapPopulated:
     for host, password in config['hosts'].items():
-        boincClient = client.BoincClient(host=host, passwd=password)
+        if host in hostConnectionsMap:
+            boincClient = hostConnectionsMap[host]
+        else:
+            boincClient = client.BoincClient(host=host, passwd=password)
 
-        try:
-            boincClient.connect()
-        except (socket.timeout, OSError) as timeout:
-            LOGGER.info(f"Host {host} Timeout: {timeout}")
-            continue
+            hostConnectionsMap[host] = boincClient
+
+            try:
+                boincClient.connect()
+            except (socket.timeout, OSError) as timeout:
+                LOGGER.info(f"Host {host} Timeout: {timeout}")
+                continue
 
         if boincClient.connected:
             stateInfo = boincClient.get_state()
-
-            LOGGER.debug(f"State Info: {stateInfo}")
 
             for app in stateInfo.apps:
                 appMap[app.name] = {
                     "user_friendly_name": app.user_friendly_name,
                     "non_cpu_intensive": app.non_cpu_intensive
                 }
-
-            # appMapPopulated = True
 
             for wu in stateInfo.work_units:
                 workUnitMap[wu.name] = {
@@ -283,55 +336,55 @@ def updateState():
                     "command_line": wu.command_line
                 }
 
-            workUnitMapPopulated = True
-
 
 def updateHosts():
-    global hostMap, hostMapPopulated
-    if not hostMapPopulated:
-        for host, password in config['hosts'].items():
+    global hostMap, hostConnectionsMap
+
+    for host, password in config['hosts'].items():
+        if host in hostConnectionsMap:
+            boincClient = hostConnectionsMap[host]
+        else:
             boincClient = client.BoincClient(host=host, passwd=password)
+
+            hostConnectionsMap[host] = boincClient
 
             try:
                 boincClient.connect()
             except (socket.timeout, OSError) as timeout:
-                LOGGER.info(f"Timeout: {timeout}")
+                LOGGER.info(f"Host {host} Timeout: {timeout}")
                 continue
 
-            if boincClient.connected:
-                hostInfo = boincClient.get_host_info()
-                gpu = "--"
-                if len(hostInfo.coprocs) == 1:
-                    gpuData = hostInfo.coprocs[0]
-                    gpu = "%s" % (gpuData.name)
-                elif len(hostInfo.coprocs) > 1:
-                    gpu = ""
+        if boincClient.connected:
+            hostInfo = boincClient.get_host_info()
+            gpu = "--"
+            if len(hostInfo.coprocs) == 1:
+                gpuData = hostInfo.coprocs[0]
+                gpu = "%s" % (gpuData.name)
+            elif len(hostInfo.coprocs) > 1:
+                gpu = ""
 
-                    LOGGER.debug(f"Coprocessors: {hostInfo.coprocs}")
+                LOGGER.debug(f"Coprocessors: {hostInfo.coprocs}")
 
-                    for proc in hostInfo.coprocs:
-                        gpu = "%s " % proc.name
+                for proc in hostInfo.coprocs:
+                    gpu = "%s " % proc.name
 
-                hostMap[host] = {
-                    'computerID': hostInfo.host_cpid,
-                    'hostname': hostInfo.domain_name,
-                    'ncpus': hostInfo.p_ncpus,
-                    'fpops': hostInfo.p_fpops,
-                    'processorModel': hostInfo.p_model,
-                    'processorVendor': hostInfo.p_vendor,
-                    'productName': hostInfo.product_name,
-                    'osName': hostInfo.os_name,
-                    'osVersion': hostInfo.os_version,
-                    'gpu': gpu,
-                    'boincVersion': boincClient.version
-                }
-
-                boincClient.disconnect()
-        hostMapPopulated = True
+            hostMap[host] = {
+                'computerID': hostInfo.host_cpid,
+                'hostname': hostInfo.domain_name,
+                'ncpus': hostInfo.p_ncpus,
+                'fpops': hostInfo.p_fpops,
+                'processorModel': hostInfo.p_model,
+                'processorVendor': hostInfo.p_vendor,
+                'productName': hostInfo.product_name,
+                'osName': hostInfo.os_name,
+                'osVersion': hostInfo.os_version,
+                'gpu': gpu,
+                'boincVersion': boincClient.version
+            }
 
 
 def updateTasks():
-    global TASKS, projectMap, tasksByHostMap
+    global TASKS, projectMap, tasksByHostMap, hostConnectionsMap
 
     updateProjects()
 
@@ -339,22 +392,27 @@ def updateTasks():
     tasksByHostMap = {}
 
     for host, password in config['hosts'].items():
-        boincClient = client.BoincClient(host=host, passwd=password)
         hostTasks = []
 
-        try:
-            boincClient.connect()
+        if host in hostConnectionsMap:
+            boincClient = hostConnectionsMap[host]
+        else:
+            boincClient = client.BoincClient(host=host, passwd=password)
 
-            hostTasks = boincClient.get_results()
+            hostConnectionsMap[host] = boincClient
 
-            tasksByHostMap[host] = {'tasks': len(hostTasks)}
+            try:
+                boincClient.connect()
+            except (socket.timeout, OSError) as timeout:
+                LOGGER.info(f"Host {host} Timeout: {timeout}")
+                continue
 
-            cc_status = boincClient.get_cc_status()
+        hostTasks = boincClient.get_results()
 
-            LOGGER.info(f"{host}: {len(hostTasks)}")
-        except (socket.timeout, OSError) as timeout:
-            LOGGER.info(f"Timeout: {timeout}")
-            continue
+        tasksByHostMap[host] = {'tasks': len(hostTasks)}
+
+        cc_status = boincClient.get_cc_status()
+        LOGGER.info(f"{host}: {len(hostTasks)}")
 
         for task in hostTasks:
             projectName = "Unknown"
@@ -521,20 +579,24 @@ def updateTasks():
                 'status': statusString,
                 'state': state
             })
-        boincClient.disconnect()
 
 
 def updateStatistics():
     global statsMap, projectMap
 
     for host, password in config['hosts'].items():
-        boincClient = client.BoincClient(host=host, passwd=password)
+        if host in hostConnectionsMap:
+            boincClient = hostConnectionsMap[host]
+        else:
+            boincClient = client.BoincClient(host=host, passwd=password)
 
-        try:
-            boincClient.connect()
-        except (socket.timeout, OSError) as timeout:
-            LOGGER.info(f"Timeout: {timeout}")
-            continue
+            hostConnectionsMap[host] = boincClient
+
+            try:
+                boincClient.connect()
+            except (socket.timeout, OSError) as timeout:
+                LOGGER.info(f"Host {host} Timeout: {timeout}")
+                continue
 
         if boincClient.connected:
             statistics = boincClient.get_statistics()
@@ -542,20 +604,24 @@ def updateStatistics():
                 ps.project = projectMap[ps.master_url]
 
             statsMap[host] = statistics
-            boincClient.disconnect()
 
 
 def updateDiskUsage():
     global diskUsageMap, projectMap
 
     for host, password in config['hosts'].items():
-        boincClient = client.BoincClient(host=host, passwd=password)
+        if host in hostConnectionsMap:
+            boincClient = hostConnectionsMap[host]
+        else:
+            boincClient = client.BoincClient(host=host, passwd=password)
 
-        try:
-            boincClient.connect()
-        except (socket.timeout, OSError) as timeout:
-            LOGGER.info(f"Timeout: {timeout}")
-            continue
+            hostConnectionsMap[host] = boincClient
+
+            try:
+                boincClient.connect()
+            except (socket.timeout, OSError) as timeout:
+                LOGGER.info(f"Host {host} Timeout: {timeout}")
+                continue
 
         if boincClient.connected:
             disk_usage = boincClient.get_disk_usage()
@@ -577,20 +643,24 @@ def updateDiskUsage():
                 project.name = projectMap[project.master_url].project_name
 
             diskUsageMap[host] = usage
-            boincClient.disconnect()
 
 
 def updateTransfers():
     global transferMap
 
     for host, password in config['hosts'].items():
-        boincClient = client.BoincClient(host=host, passwd=password)
+        if host in hostConnectionsMap:
+            boincClient = hostConnectionsMap[host]
+        else:
+            boincClient = client.BoincClient(host=host, passwd=password)
 
-        try:
-            boincClient.connect()
-        except (socket.timeout, OSError) as timeout:
-            LOGGER.info(f"Timeout: {timeout}")
-            continue
+            hostConnectionsMap[host] = boincClient
+
+            try:
+                boincClient.connect()
+            except (socket.timeout, OSError) as timeout:
+                LOGGER.info(f"Host {host} Timeout: {timeout}")
+                continue
 
         if boincClient.connected:
             transfers = boincClient.get_file_transfers()
@@ -599,4 +669,3 @@ def updateTransfers():
                 transfer
 
             transferMap[host] = transfers
-            boincClient.disconnect()
