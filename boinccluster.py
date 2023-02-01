@@ -218,7 +218,7 @@ def updateStatus():
         else:
             boincClient = client.BoincClient(host=host, passwd=password)
 
-            hostConnectionsMap[request.form['host']] = boincClient
+            hostConnectionsMap[host] = boincClient
 
             try:
                 boincClient.connect()
