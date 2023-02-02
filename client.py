@@ -361,10 +361,11 @@ class _Struct(object):
 
 @total_ordering
 class VersionInfo(_Struct):
-    def __init__(self, major=0, minor=0, release=0):
-        self.major = major
-        self.minor = minor
-        self.release = release
+    def __init__(self):
+        self.major = 0
+        self.minor = 0
+        self.release = 0
+        self.prerelease = False
 
     @property
     def _tuple(self):
@@ -1073,7 +1074,7 @@ class BoincClient(object):
                 f"Socket error, {self.hostname} client connectioned failed")
             return
         self.authorized = self.authorize(self.passwd)
-        self.version = self.exchange_versions()
+        self.version = self.exchange_versions(f'BOINC Cluster {self.version}')
 
     def disconnect(self):
         LOGGER.debug(f"{self.hostname} client disconnected...")
@@ -1104,7 +1105,7 @@ class BoincClient(object):
         else:
             return False
 
-    def exchange_versions(self):
+    def exchange_versions(self, name):
         ''' Return VersionInfo instance with core client version info '''
         version_parts = self.version.split('.')
         LOGGER.debug(f'version_parts: {version_parts}')
@@ -1112,7 +1113,7 @@ class BoincClient(object):
                                                f"   <major>{version_parts[0]}</major>\n"
                                                f"   <minor>{version_parts[1]}</minor>\n"
                                                f"   <release>{version_parts[2]}</release>\n"
-                                               "   <name>boinc-cluster@home</name>\n"
+                                               "   <name>{name}</name>\n"
                                                "</exchange_versions>\n"))
 
     def get_cc_status(self):
