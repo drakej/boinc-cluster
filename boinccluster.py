@@ -180,35 +180,35 @@ TASKS = []
 STATUS = OrderedDict()
 
 network_status_icon_map = {
-    client.NetworkStatus.UNKNOWN: 'fa-question',
-    client.NetworkStatus.ONLINE: 'fa-stream',
-    client.NetworkStatus.WANT_CONNECTION: 'fa-plug',
-    client.NetworkStatus.WANT_DISCONNECT: 'fa-unlink'
+    client.NetworkStatus.UNKNOWN.value: 'fa-question',
+    client.NetworkStatus.ONLINE.value: 'fa-stream',
+    client.NetworkStatus.WANT_CONNECTION.value: 'fa-plug',
+    client.NetworkStatus.WANT_DISCONNECT.value: 'fa-unlink'
 }
 
 runModeIconMap = {
-    client.RunMode.ALWAYS: 'text-success fa-bolt',
-    client.RunMode.AUTO: 'text-success fa-user-cog',
-    client.RunMode.NEVER: 'text-secondary fa-power-off'
+    client.RunMode.ALWAYS.value: 'text-success fa-bolt',
+    client.RunMode.AUTO.value: 'text-success fa-user-cog',
+    client.RunMode.NEVER.value: 'text-secondary fa-power-off'
 }
 
 # TODO: Move to client.py
 runModeDescMap = {
-    client.RunMode.ALWAYS: 'Run always',
-    client.RunMode.AUTO: 'Run based on preferences',
-    client.RunMode.NEVER: 'Suspend'
+    client.RunMode.ALWAYS.value: 'Run always',
+    client.RunMode.AUTO.value: 'Run based on preferences',
+    client.RunMode.NEVER.value: 'Suspend'
 }
 
 gpuModeDescMap = {
-    client.RunMode.ALWAYS: 'Use GPU always',
-    client.RunMode.AUTO: 'Use GPU based on preferences',
-    client.RunMode.NEVER: 'Suspend GPU'
+    client.RunMode.ALWAYS.value: 'Use GPU always',
+    client.RunMode.AUTO.value: 'Use GPU based on preferences',
+    client.RunMode.NEVER.value: 'Suspend GPU'
 }
 
 netModeDescMap = {
-    client.RunMode.ALWAYS: 'Network activity always',
-    client.RunMode.AUTO: 'Network activity based on preferences',
-    client.RunMode.NEVER: 'Suspend network activity'
+    client.RunMode.ALWAYS.value: 'Network activity always',
+    client.RunMode.AUTO.value: 'Network activity based on preferences',
+    client.RunMode.NEVER.value: 'Suspend network activity'
 }
 
 

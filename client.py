@@ -28,6 +28,7 @@ import time
 import logging
 import configparser
 
+from enum import Enum
 from multiprocessing.pool import INIT
 from functools import total_ordering
 from xml.etree import ElementTree
@@ -110,29 +111,9 @@ def parse_list(e):
     return list(e)
 
 
-class Enum(object):
-    UNKNOWN = -1  # Not in original API
-
-    @classmethod
-    def name(cls, value):
-        ''' Quick-and-dirty fallback for getting the "name" of an enum item '''
-
-        # value as string, if it matches an enum attribute.
-        # Allows short usage as Enum.name("VALUE") besides Enum.name(Enum.VALUE)
-        if hasattr(cls, str(value)):
-            return cls.name(getattr(cls, value, None))
-
-        # value not handled in subclass name()
-        for k, v in cls.__dict__.items():
-            if v == value:
-                return k.lower().replace('_', ' ')
-
-        # value not found
-        return cls.name(Enum.UNKNOWN)
-
-
 class NetworkStatus(Enum):
     ''' Values of "network_status" '''
+    UNKNOWN = -1
     ONLINE = 0  # // have network connections open
     WANT_CONNECTION = 1  # // need a physical connection
     WANT_DISCONNECT = 2  # // don't have any connections, and don't need any
@@ -190,6 +171,7 @@ class SuspendReason(Enum):
     ''' bitmap defs for task_suspend_reason, network_suspend_reason
         Note: doesn't need to be a bitmap, but keep for compatibility
     '''
+    UNKNOWN = -1
     NOT_SUSPENDED = 0  # Not in original API
     BATTERIES = 1
     USER_ACTIVE = 2
@@ -250,6 +232,7 @@ class RunMode(Enum):
     ''' Run modes for CPU, GPU, network,
         controlled by Activity menu and snooze button
     '''
+    UNKNOWN = -1
     ALWAYS = 1
     AUTO = 2
     NEVER = 3
@@ -288,6 +271,7 @@ class CpuSched(Enum):
         "SCHEDULED" is synonymous with "executing" except when CPU throttling
         is in use.
     '''
+    UNKNOWN = -1
     UNINITIALIZED = 0
     PREEMPTED = 1
     SCHEDULED = 2
@@ -299,6 +283,7 @@ class ResultState(Enum):
         (because of the > comparison in RESULT::computing_done())
         see html/inc/common_defs.inc
     '''
+    UNKNOWN = -1
     NEW = 0
     # // New result
     FILES_DOWNLOADING = 1
@@ -391,23 +376,23 @@ class VersionInfo(_Struct):
 
 class CcStatus(_Struct):
     def __init__(self):
-        self.network_status = NetworkStatus.UNKNOWN
+        self.network_status = NetworkStatus.UNKNOWN.value
         self.ams_password_error = False
         self.manager_must_quit = False
 
-        self.task_suspend_reason = SuspendReason.UNKNOWN  # // bitmap
-        self.task_mode = RunMode.UNKNOWN
-        self.task_mode_perm = RunMode.UNKNOWN  # // same, but permanent version
+        self.task_suspend_reason = SuspendReason.UNKNOWN.value  # // bitmap
+        self.task_mode = RunMode.UNKNOWN.value
+        self.task_mode_perm = RunMode.UNKNOWN.value  # // same, but permanent version
         self.task_mode_delay = 0.0  # // time until perm becomes actual
 
-        self.network_suspend_reason = SuspendReason.UNKNOWN
-        self.network_mode = RunMode.UNKNOWN
-        self.network_mode_perm = RunMode.UNKNOWN
+        self.network_suspend_reason = SuspendReason.UNKNOWN.value
+        self.network_mode = RunMode.UNKNOWN.value
+        self.network_mode_perm = RunMode.UNKNOWN.value
         self.network_mode_delay = 0.0
 
-        self.gpu_suspend_reason = SuspendReason.UNKNOWN
-        self.gpu_mode = RunMode.UNKNOWN
-        self.gpu_mode_perm = RunMode.UNKNOWN
+        self.gpu_suspend_reason = SuspendReason.UNKNOWN.value
+        self.gpu_mode = RunMode.UNKNOWN.value
+        self.gpu_mode_perm = RunMode.UNKNOWN.value
         self.gpu_mode_delay = 0.0
 
         self.disallow_attach = False
@@ -826,7 +811,7 @@ class Result(_Struct):
         # // we've received the ack for this result from the server
         self.final_cpu_time = 0.0
         self.final_elapsed_time = 0.0
-        self.state = ResultState.NEW
+        self.state = ResultState.NEW.value
         self.estimated_cpu_time_remaining = 0.0
         # // actually, estimated elapsed time remaining
         self.exit_status = 0
@@ -847,11 +832,11 @@ class Result(_Struct):
         # // the following defined if active
         # XML is generated in client/app.cpp ACTIVE_TASK::write_gui()
         self.active_task = False
-        self.active_task_state = Process.UNINITIALIZED
+        self.active_task_state = Process.UNINITIALIZED.value
         self.app_version_num = 0
         self.slot = -1
         self.pid = 0
-        self.scheduler_state = CpuSched.UNINITIALIZED
+        self.scheduler_state = CpuSched.UNINITIALIZED.value
         self.checkpoint_cpu_time = 0.0
         self.current_cpu_time = 0.0
         self.fraction_done = 0.0
