@@ -70,8 +70,9 @@ def setattrs_from_xml(obj, xml, attrfuncdict={}):
                 else:
                     def attrfunc(x): return x
             setattr(obj, e.tag, attrfunc(e))
-        # else:
-        #     print("class missing attribute '%s': %r" % (e.tag, obj))
+        else:
+            LOGGER.warning(f"Class {type(obj)} missing attribute '{e.tag}'")
+
     return obj
 
 
