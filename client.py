@@ -413,6 +413,8 @@ class CcStatus(_Struct):
         self.disallow_attach = False
         self.simple_gui_only = False
 
+        self.max_event_log_lines = 0
+
 
 class HostInfo(_Struct):
     def __init__(self):
