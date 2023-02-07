@@ -4,6 +4,7 @@
 # rpc.py - Generic RPC Somewhat higher-level GUI_RPC API for BOINC core client
 #
 #    Copyright (C) 2013 Rodrigo Silva (MestreLion) <linux@rodrigosilva.com>
+#    Copyright (C) 2020 Jonathan Drake (drakej) <952345+drakej@users.noreply.github.com>
 #
 #    This program is free software: you can redistribute it and/or modify
 #    it under the terms of the GNU General Public License as published by
