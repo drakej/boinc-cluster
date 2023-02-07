@@ -140,6 +140,7 @@ class RPCReason(Enum):
     ''' beep boop
 
     '''
+    UNKNOWN = -1
     USER_REQ = 1
     RESULTS_DUE = 2
     NEED_WORK = 3
@@ -150,22 +151,22 @@ class RPCReason(Enum):
 
     @classmethod
     def name(cls, v):
-        if v == cls.USER_REQ:
+        if v == cls.USER_REQ.value:
             return "Requested by user"
-        elif v == cls.RESULTS_DUE:
+        elif v == cls.RESULTS_DUE.value:
             return "To report completed tasks"
-        elif v == cls.NEED_WORK:
+        elif v == cls.NEED_WORK.value:
             return "To fetch work"
-        elif v == cls.TRICKLE_UP:
+        elif v == cls.TRICKLE_UP.value:
             return "To send trickle-up message"
-        elif v == cls.ACCT_MGR_REQ:
+        elif v == cls.ACCT_MGR_REQ.value:
             return "Requested by account manager"
-        elif v == cls.INIT:
+        elif v == cls.INIT.value:
             return "Project initialization"
-        elif v == cls.PROJECT_REQ:
+        elif v == cls.PROJECT_REQ.value:
             return "Requested by project"
         else:
-            return super(RPCReason, cls).name(v)
+            return cls.UNKNOWN.name
 
 
 class SuspendReason(Enum):
