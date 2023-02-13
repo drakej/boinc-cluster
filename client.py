@@ -908,8 +908,10 @@ class WorkUnit(_Struct):
         self.app_name = ""
         self.version_num = 0
 
+        self.rsc_memory_bound = 0.0
         self.rsc_fpops_est = 0.0
         self.rsc_fpops_bound = 0.0
+        self.rsc_disk_bound = 0.0
         self.command_line = ""
 
         self.file_refs = []
@@ -987,6 +989,8 @@ class ClientState(_Struct):
         self.results = []
 
         self.work_units = []
+
+        platforms = []
 
     @classmethod
     def parse(cls, xml):
