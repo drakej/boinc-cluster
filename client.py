@@ -192,42 +192,31 @@ class SuspendReason(Enum):
     BATTERY_CHARGING = 4098
     BATTERY_OVERHEATED = 4099
 
+    name_hash = {
+        UNKNOWN: "unknown reason",
+        BATTERIES: "on batteries",
+        USER_ACTIVE: "computer is in use",
+        USER_REQ: "user request",
+        TIME_OF_DAY: "time of day",
+        BENCHMARKS: "CPU benchmarks in progress",
+        DISK_SIZE: "need disk space - check preferences",
+        NO_RECENT_INPUT: "no recent user activity",
+        INITIAL_DELAY: "initial delay",
+        EXCLUSIVE_APP_RUNNING: "an exclusive app is running",
+        CPU_USAGE: "CPU is busy",
+        NETWORK_QUOTA_EXCEEDED: "network bandwidth limit exceeded",
+        OS: "requested by operating system",
+        WIFI_STATE: "not connected to WiFi network",
+        BATTERY_CHARGING: "battery is charging",
+        BATTERY_OVERHEATED: "battery is overheated"
+    }
+
     @classmethod
     def name(cls, v):
-        if v == cls.UNKNOWN:
-            return "unknown reason"
-        elif v == cls.BATTERIES:
-            return "on batteries"
-        elif v == cls.USER_ACTIVE:
-            return "computer is in use"
-        elif v == cls.USER_REQ:
-            return "user request"
-        elif v == cls.TIME_OF_DAY:
-            return "time of day"
-        elif v == cls.BENCHMARKS:
-            return "CPU benchmarks in progress"
-        elif v == cls.DISK_SIZE:
-            return "need disk space - check preferences"
-        elif v == cls.NO_RECENT_INPUT:
-            return "no recent user activity"
-        elif v == cls.INITIAL_DELAY:
-            return "initial delay"
-        elif v == cls.EXCLUSIVE_APP_RUNNING:
-            return "an exclusive app is running"
-        elif v == cls.CPU_USAGE:
-            return "CPU is busy"
-        elif v == cls.NETWORK_QUOTA_EXCEEDED:
-            return "network bandwidth limit exceeded"
-        elif v == cls.OS:
-            return "requested by operating system"
-        elif v == cls.WIFI_STATE:
-            return "not connected to WiFi network"
-        elif v == cls.BATTERY_CHARGING:
-            return "battery is recharging"
-        elif v == cls.BATTERY_OVERHEATED:
-            return "battery is overheated"
+        if v in cls.name_hash:
+            return cls.name_hash[v]
         else:
-            return super(SuspendReason, cls).name(v)
+            return "unknown"
 
 
 class RunMode(Enum):
@@ -247,7 +236,7 @@ class RunMode(Enum):
         if v == cls.AUTO:
             return "according to prefs"
         else:
-            return super(RunMode, cls).name(v)
+            return cls[v].name()
 
 
 def mode_name(mode):
