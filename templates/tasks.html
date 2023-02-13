@@ -27,7 +27,7 @@
 
         let table = $('#tasks_table').DataTable({
             "ajax": '{{ url_for('tasksLive') }}',
-            "pageLength": 25,
+            "pageLength": 100,
             "columns": [
                 { data: "hostname", className: "nowrap" },
                 { data: "projectName", className: "nowrap" },
