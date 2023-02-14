@@ -120,20 +120,20 @@ class NetworkStatus(Enum):
     WANT_DISCONNECT = 2  # // don't have any connections, and don't need any
     LOOKUP_PENDING = 3  # // a website lookup is pending (try again later)
 
+    name_hash = {
+        UNKNOWN: "unknown",
+        ONLINE: "online",
+        WANT_CONNECTION: "need connection",
+        WANT_DISCONNECT: "don't need connection",
+        LOOKUP_PENDING: "reference site lookup pending"
+    }
+
     @classmethod
     def name(cls, v):
-        if v == cls.UNKNOWN:
-            return "unknown"
-        elif v == cls.ONLINE:
-            return "online"  # misleading
-        elif v == cls.WANT_CONNECTION:
-            return "need connection"
-        elif v == cls.WANT_DISCONNECT:
-            return "don't need connection"
-        elif v == cls.LOOKUP_PENDING:
-            return "reference site lookup pending"
+        if v in cls.name_hash:
+            return cls.name_hash[v]
         else:
-            return super(NetworkStatus, cls).name(v)
+            return "unknown"
 
 
 class RPCReason(Enum):
@@ -149,24 +149,23 @@ class RPCReason(Enum):
     INIT = 6
     PROJECT_REQ = 7
 
+    name_hash = {
+        UNKNOWN: "unkown",
+        USER_REQ: "Requested by user",
+        RESULTS_DUE: "To report completed tasks",
+        NEED_WORK: "To fetch work",
+        TRICKLE_UP: "To send trickle-up message",
+        ACCT_MGR_REQ: "Requested by account manager",
+        INIT: "Project initialization",
+        PROJECT_REQ: "Requested by project"
+    }
+
     @classmethod
     def name(cls, v):
-        if v == cls.USER_REQ.value:
-            return "Requested by user"
-        elif v == cls.RESULTS_DUE.value:
-            return "To report completed tasks"
-        elif v == cls.NEED_WORK.value:
-            return "To fetch work"
-        elif v == cls.TRICKLE_UP.value:
-            return "To send trickle-up message"
-        elif v == cls.ACCT_MGR_REQ.value:
-            return "Requested by account manager"
-        elif v == cls.INIT.value:
-            return "Project initialization"
-        elif v == cls.PROJECT_REQ.value:
-            return "Requested by project"
+        if v in cls.name_hash:
+            return cls.name_hash[v]
         else:
-            return cls.UNKNOWN.name
+            return "unknown"
 
 
 class SuspendReason(Enum):
