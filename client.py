@@ -28,7 +28,7 @@ import time
 import logging
 import configparser
 
-from enum import Enum
+from enum import IntEnum
 from multiprocessing.pool import INIT
 from functools import total_ordering
 from xml.etree import ElementTree
@@ -67,16 +67,25 @@ def setattrs_from_xml(obj, xml, attrfuncdict={}):
                     attrfunc = parse_str
                 elif isinstance(attr, list):
                     attrfunc = parse_list
+                elif isinstance(attr, IntEnum):
+                    attrfunc = parse_enum
                 else:
-                    def attrfunc(x): return x
-            setattr(obj, e.tag, attrfunc(e))
-        else:
-            LOGGER.warning(f"Class {type(obj)} missing attribute '{e.tag}'")
+                    def attrfunc(x, attr): return x
+            setattr(obj, e.tag, attrfunc(e, attr))
 
     return obj
 
 
-def parse_bool(e):
+def parse_enum(e, attr):
+    enum_class = type(attr)
+
+    if e.text is None:
+        return enum_class.UNKNOWN
+    else:
+        return enum_class(int(e.text))
+
+
+def parse_bool(e, attr):
     ''' Helper to convert ElementTree.Element.text to boolean.
         Treat '<foo/>' (and '<foo>[[:blank:]]</foo>') as True
         Treat '0' and 'false' as False
@@ -87,7 +96,7 @@ def parse_bool(e):
         return bool(e.text) and not e.text.strip().lower() in ('0', 'false')
 
 
-def parse_int(e):
+def parse_int(e, attr):
     ''' Helper to convert ElementTree.Element.text to integer.
         Treat '<foo/>' (and '<foo></foo>') as 0
     '''
@@ -95,24 +104,24 @@ def parse_int(e):
     return 0 if e.text is None else int(float(e.text.strip()))
 
 
-def parse_float(e):
+def parse_float(e, attr):
     ''' Helper to convert ElementTree.Element.text to float. '''
     return 0.0 if e.text is None else float(e.text.strip())
 
 
-def parse_str(e):
+def parse_str(e, attr):
     ''' Helper to convert ElementTree.Element.text to string. '''
     return "" if e.text is None else e.text.strip()
 
 
-def parse_list(e):
+def parse_list(e, attr):
     ''' Helper to convert ElementTree.Element to list. For now, simply return
         the list of root element's children
     '''
     return list(e)
 
 
-class NetworkStatus(Enum):
+class NetworkStatus(IntEnum):
     ''' Values of "network_status" '''
     UNKNOWN = -1
     ONLINE = 0  # // have network connections open
@@ -136,7 +145,7 @@ class NetworkStatus(Enum):
             return "unknown"
 
 
-class RPCReason(Enum):
+class RPCReason(IntEnum):
     ''' beep boop
 
     '''
@@ -149,26 +158,26 @@ class RPCReason(Enum):
     INIT = 6
     PROJECT_REQ = 7
 
-    name_hash = {
-        UNKNOWN: "unkown",
-        USER_REQ: "Requested by user",
-        RESULTS_DUE: "To report completed tasks",
-        NEED_WORK: "To fetch work",
-        TRICKLE_UP: "To send trickle-up message",
-        ACCT_MGR_REQ: "Requested by account manager",
-        INIT: "Project initialization",
-        PROJECT_REQ: "Requested by project"
-    }
-
     @classmethod
     def name(cls, v):
-        if v in cls.name_hash:
-            return cls.name_hash[v]
+        name_hash = {
+            cls.UNKNOWN: "unkown",
+            cls.USER_REQ: "Requested by user",
+            cls.RESULTS_DUE: "To report completed tasks",
+            cls.NEED_WORK: "To fetch work",
+            cls.TRICKLE_UP: "To send trickle-up message",
+            cls.ACCT_MGR_REQ: "Requested by account manager",
+            cls.INIT: "Project initialization",
+            cls.PROJECT_REQ: "Requested by project"
+        }
+
+        if v in name_hash:
+            return name_hash[v]
         else:
             return "unknown"
 
 
-class SuspendReason(Enum):
+class SuspendReason(IntEnum):
     ''' bitmap defs for task_suspend_reason, network_suspend_reason
         Note: doesn't need to be a bitmap, but keep for compatibility
     '''
@@ -191,34 +200,35 @@ class SuspendReason(Enum):
     BATTERY_CHARGING = 4098
     BATTERY_OVERHEATED = 4099
 
-    name_hash = {
-        UNKNOWN: "unknown reason",
-        BATTERIES: "on batteries",
-        USER_ACTIVE: "computer is in use",
-        USER_REQ: "user request",
-        TIME_OF_DAY: "time of day",
-        BENCHMARKS: "CPU benchmarks in progress",
-        DISK_SIZE: "need disk space - check preferences",
-        NO_RECENT_INPUT: "no recent user activity",
-        INITIAL_DELAY: "initial delay",
-        EXCLUSIVE_APP_RUNNING: "an exclusive app is running",
-        CPU_USAGE: "CPU is busy",
-        NETWORK_QUOTA_EXCEEDED: "network bandwidth limit exceeded",
-        OS: "requested by operating system",
-        WIFI_STATE: "not connected to WiFi network",
-        BATTERY_CHARGING: "battery is charging",
-        BATTERY_OVERHEATED: "battery is overheated"
-    }
-
     @classmethod
     def name(cls, v):
-        if v in cls.name_hash:
-            return cls.name_hash[v]
+        name_hash = {
+            cls.UNKNOWN: "unknown reason",
+            cls.NOT_SUSPENDED: "not suspended",
+            cls.BATTERIES: "on batteries",
+            cls.USER_ACTIVE: "computer is in use",
+            cls.USER_REQ: "user request",
+            cls.TIME_OF_DAY: "time of day",
+            cls.BENCHMARKS: "CPU benchmarks in progress",
+            cls.DISK_SIZE: "need disk space - check preferences",
+            cls.NO_RECENT_INPUT: "no recent user activity",
+            cls.INITIAL_DELAY: "initial delay",
+            cls.EXCLUSIVE_APP_RUNNING: "an exclusive app is running",
+            cls.CPU_USAGE: "CPU is busy",
+            cls.NETWORK_QUOTA_EXCEEDED: "network bandwidth limit exceeded",
+            cls.OS: "requested by operating system",
+            cls.WIFI_STATE: "not connected to WiFi network",
+            cls.BATTERY_CHARGING: "battery is charging",
+            cls.BATTERY_OVERHEATED: "battery is overheated"
+        }
+
+        if v in name_hash:
+            return name_hash[v]
         else:
             return "unknown"
 
 
-class RunMode(Enum):
+class RunMode(IntEnum):
     ''' Run modes for CPU, GPU, network,
         controlled by Activity menu and snooze button
     '''
@@ -256,7 +266,7 @@ def mode_name(mode):
     return name
 
 
-class CpuSched(Enum):
+class CpuSched(IntEnum):
     ''' values of ACTIVE_TASK::scheduler_state and ACTIVE_TASK::next_scheduler_state
         "SCHEDULED" is synonymous with "executing" except when CPU throttling
         is in use.
@@ -267,7 +277,7 @@ class CpuSched(Enum):
     SCHEDULED = 2
 
 
-class ResultState(Enum):
+class ResultState(IntEnum):
     ''' Values of RESULT::state in client.
         THESE MUST BE IN NUMERICAL ORDER
         (because of the > comparison in RESULT::computing_done())
@@ -292,7 +302,7 @@ class ResultState(Enum):
     # // some output file permanent failure
 
 
-class Process(Enum):
+class Process(IntEnum):
     ''' values of ACTIVE_TASK::task_state '''
     UNINITIALIZED = 0
     # // process doesn't exist yet
@@ -366,23 +376,23 @@ class VersionInfo(_Struct):
 
 class CcStatus(_Struct):
     def __init__(self):
-        self.network_status = NetworkStatus.UNKNOWN.value
+        self.network_status = NetworkStatus.UNKNOWN
         self.ams_password_error = False
         self.manager_must_quit = False
 
-        self.task_suspend_reason = SuspendReason.UNKNOWN.value  # // bitmap
-        self.task_mode = RunMode.UNKNOWN.value
-        self.task_mode_perm = RunMode.UNKNOWN.value  # // same, but permanent version
+        self.task_suspend_reason = SuspendReason.UNKNOWN  # // bitmap
+        self.task_mode = RunMode.UNKNOWN
+        self.task_mode_perm = RunMode.UNKNOWN  # // same, but permanent version
         self.task_mode_delay = 0.0  # // time until perm becomes actual
 
-        self.network_suspend_reason = SuspendReason.UNKNOWN.value
-        self.network_mode = RunMode.UNKNOWN.value
-        self.network_mode_perm = RunMode.UNKNOWN.value
+        self.network_suspend_reason = SuspendReason.UNKNOWN
+        self.network_mode = RunMode.UNKNOWN
+        self.network_mode_perm = RunMode.UNKNOWN
         self.network_mode_delay = 0.0
 
-        self.gpu_suspend_reason = SuspendReason.UNKNOWN.value
-        self.gpu_mode = RunMode.UNKNOWN.value
-        self.gpu_mode_perm = RunMode.UNKNOWN.value
+        self.gpu_suspend_reason = SuspendReason.UNKNOWN
+        self.gpu_mode = RunMode.UNKNOWN
+        self.gpu_mode_perm = RunMode.UNKNOWN
         self.gpu_mode_delay = 0.0
 
         self.disallow_attach = False
@@ -801,7 +811,7 @@ class Result(_Struct):
         # // we've received the ack for this result from the server
         self.final_cpu_time = 0.0
         self.final_elapsed_time = 0.0
-        self.state = ResultState.NEW.value
+        self.state = ResultState.NEW
         self.estimated_cpu_time_remaining = 0.0
         # // actually, estimated elapsed time remaining
         self.exit_status = 0
@@ -822,11 +832,11 @@ class Result(_Struct):
         # // the following defined if active
         # XML is generated in client/app.cpp ACTIVE_TASK::write_gui()
         self.active_task = False
-        self.active_task_state = Process.UNINITIALIZED.value
+        self.active_task_state = Process.UNINITIALIZED
         self.app_version_num = 0
         self.slot = -1
         self.pid = 0
-        self.scheduler_state = CpuSched.UNINITIALIZED.value
+        self.scheduler_state = CpuSched.UNINITIALIZED
         self.checkpoint_cpu_time = 0.0
         self.current_cpu_time = 0.0
         self.fraction_done = 0.0
