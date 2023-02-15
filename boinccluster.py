@@ -434,9 +434,9 @@ def updateTasks():
             if task.coproc_missing:
                 state = "GPU Missing, "
 
-            if task.state == 0:
+            if task.state == client.ResultState.NEW:
                 state = "New"
-            elif task.state == 1:
+            elif task.state == client.ResultState.FILES_DOWNLOADING:
                 if task.ready_to_report:
                     state = "Download failed"
                 else:
@@ -444,15 +444,16 @@ def updateTasks():
 
                     if cc_status.network_suspend_reason:
                         state += " (suspended - %s)" % cc_status.network_suspend_reason
-            elif task.state == 2:
+            elif task.state == client.ResultState.FILES_DOWNLOADED:
                 if task.project_suspended_via_gui:
                     state = "Project suspended by user"
                 elif task.suspended_via_gui:
                     state = "Task suspended by user"
                 elif cc_status.task_suspend_reason and not throttled and task.active_task_state != 1:
                     state = "Suspended - %s" % cc_status.task_suspend_reason
-                elif cc_status.gpu_suspend_reason:
-                    state = "GPU suspended - %s" % cc_status.gpu_suspend_reason
+                elif cc_status.gpu_suspend_reason and 'GPU' in task.resources:
+                    state = "GPU suspended - %s" % client.SuspendReason.name(
+                        cc_status.gpu_suspend_reason)
                 elif task.active_task:
                     if task.too_large:
                         state = "Waiting for memory"
@@ -475,16 +476,16 @@ def updateTasks():
                         state = "Postponed"
                 if task.network_wait:
                     state = "Waiting for network access"
-            elif task.state == 3:
+            elif task.state == client.ResultState.COMPUTE_ERROR:
                 state = "Computation error"
-            elif task.state == 4:
+            elif task.state == client.ResultState.FILES_UPLOADING:
                 if task.ready_to_report:
                     state = "Upload failed"
                 else:
                     state = "Uploading"
                     if cc_status.network_suspend_reason:
                         state += " (suspended - %s)" % cc_status.network_suspend_reason
-            elif task.state == 6:
+            elif task.state == client.ResultState.ABORTED:
                 if task.exit_status == 203:
                     state = "Aborted by user"
                 elif task.exit_status == 202:
