@@ -129,18 +129,18 @@ class NetworkStatus(IntEnum):
     WANT_DISCONNECT = 2  # // don't have any connections, and don't need any
     LOOKUP_PENDING = 3  # // a website lookup is pending (try again later)
 
-    name_hash = {
-        UNKNOWN: "unknown",
-        ONLINE: "online",
-        WANT_CONNECTION: "need connection",
-        WANT_DISCONNECT: "don't need connection",
-        LOOKUP_PENDING: "reference site lookup pending"
-    }
-
     @classmethod
     def name(cls, v):
-        if v in cls.name_hash:
-            return cls.name_hash[v]
+        name_hash = {
+            cls.UNKNOWN: "unknown",
+            cls.ONLINE: "online",
+            cls.WANT_CONNECTION: "need connection",
+            cls.WANT_DISCONNECT: "don't need connection",
+            cls.LOOKUP_PENDING: "reference site lookup pending"
+        }
+
+        if v in name_hash:
+            return name_hash[v]
         else:
             return "unknown"
 
