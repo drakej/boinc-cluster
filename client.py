@@ -374,7 +374,7 @@ class VersionInfo(_Struct):
         return "%s%r" % (self.__class__.__name__, self._tuple)
 
 
-class CcStatus(_Struct):
+class CCStatus(_Struct):
     def __init__(self):
         self.network_status = NetworkStatus.UNKNOWN
         self.ams_password_error = False
@@ -983,7 +983,7 @@ class AppVersion(_Struct):
         return appVersion
 
 
-class ClientState(_Struct):
+class CCState(_Struct):
     def __init__(self):
 
         self.host_info = None
@@ -1006,7 +1006,7 @@ class ClientState(_Struct):
         if not isinstance(xml, ElementTree.Element):
             xml = ElementTree.fromstring(xml)
 
-        clientState = super(ClientState, cls).parse(xml)
+        clientState = super(CCState, cls).parse(xml)
         children = list(xml)
 
         for child in children:
@@ -1107,8 +1107,11 @@ class BoincClient(object):
                                                "   <name>{name}</name>\n"
                                                "</exchange_versions>\n"))
 
+    def get_state(self):
+        return CCState.parse(self.rpc.call('<get_state/>'))
+
     def get_cc_status(self):
-        ''' Return CcStatus instance containing basic status, such as
+        ''' Return CCStatus instance containing basic status, such as
             CPU / GPU / Network active/suspended, etc
         '''
         if not self.connected:
@@ -1116,44 +1119,12 @@ class BoincClient(object):
                 f"Not connected, {self.hostname} client connection attempt...")
             self.connect()
         try:
-            return CcStatus.parse(self.rpc.call('<get_cc_status/>'))
+            return CCStatus.parse(self.rpc.call('<get_cc_status/>'))
         except socket.error as error:
             self.connected = False
 
             LOGGER.error(
                 f"Socket error, {self.hostname} client connectioned failed")
-
-    def get_host_info(self):
-        ''' Get information about host hardware and usage. '''
-        return HostInfo.parse(self.rpc.call('<get_host_info/>'))
-
-    def get_state(self):
-        return ClientState.parse(self.rpc.call('<get_state/>'))
-
-    def get_statistics(self):
-        return Statistics.parse(self.rpc.call('<get_statistics/>'))
-
-    def get_file_transfers(self):
-        transfers_xml = self.rpc.call('<get_file_transfers/>')
-
-        LOGGER.debug(f"Transfers XML: {transfers_xml}")
-
-        if not transfers_xml.tag == 'file_transfers':
-            return []
-
-        transfers = []
-
-        for transfer in list(transfers_xml):
-            transfers.append(FileTransfer.parse(transfer))
-
-        return transfers
-
-    def get_tasks(self):
-        ''' Same as get_results(active_only=False) '''
-        return self.get_results(False)
-
-    def get_disk_usage(self):
-        return DiskUsageSummary.parse(self.rpc.call('<get_disk_usage/>'))
 
     def get_results(self, active_only=False):
         ''' Get a list of results.
@@ -1172,6 +1143,52 @@ class BoincClient(object):
             results.append(Result.parse(item))
 
         return results
+
+    # TODO: Implement get_old_results call
+
+    def get_file_transfers(self):
+        transfers_xml = self.rpc.call('<get_file_transfers/>')
+
+        LOGGER.debug(f"Transfers XML: {transfers_xml}")
+
+        if not transfers_xml.tag == 'file_transfers':
+            return []
+
+        transfers = []
+
+        for transfer in list(transfers_xml):
+            transfers.append(FileTransfer.parse(transfer))
+
+        return transfers
+
+    # TODO: Implement get_simple_gui_info
+
+    def get_project_status(self):
+        reply = self.rpc.call("<get_project_status/>")
+
+        if not reply or not reply.tag == 'projects':
+            return []
+
+        projects = []
+        for item in list(reply):
+            projects.append(Project.parse(item))
+
+        return projects
+
+
+    def get_host_info(self):
+        ''' Get information about host hardware and usage. '''
+        return HostInfo.parse(self.rpc.call('<get_host_info/>'))
+
+    def get_statistics(self):
+        return Statistics.parse(self.rpc.call('<get_statistics/>'))
+
+    def get_tasks(self):
+        ''' Same as get_results(active_only=False) '''
+        return self.get_results(False)
+
+    def get_disk_usage(self):
+        return DiskUsageSummary.parse(self.rpc.call('<get_disk_usage/>'))
 
     def add_account(self, url="", email="", password=""):
         '''
@@ -1192,18 +1209,6 @@ class BoincClient(object):
             f"create_account response for host {self.hostname}: {reply}")
 
         return reply
-
-    def get_projects(self):
-        reply = self.rpc.call("<get_project_status/>")
-
-        if not reply or not reply.tag == 'projects':
-            return []
-
-        projects = []
-        for item in list(reply):
-            projects.append(Project.parse(item))
-
-        return projects
 
     def set_mode(self, component, mode, duration=0):
         ''' Do the real work of set_{run,gpu,network}_mode()

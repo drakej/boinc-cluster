@@ -265,7 +265,7 @@ def updateProjects():
                 continue
 
         if boincClient.connected:
-            hostProjects = boincClient.get_projects()
+            hostProjects = boincClient.get_project_status()
 
             if hostProjects:
                 for project in hostProjects:
