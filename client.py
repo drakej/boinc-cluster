@@ -1158,7 +1158,19 @@ class BoincClient(object):
 
         return transfers
 
-    # TODO: Implement get_simple_gui_info
+    def get_simple_gui_info(self):
+        reply = self.rpc.call("<get_simple_gui_info/>")
+
+        projects = []
+        results = []
+
+        for item in list(reply):
+            if item.tag == "project":
+                projects.append(Project.parse(item))
+            elif item.tag == "result":
+                results.append(Result.parse(item))
+
+        return (projects, results)
 
     def get_project_status(self):
         reply = self.rpc.call("<get_project_status/>")
