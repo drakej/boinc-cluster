@@ -566,6 +566,19 @@ class CoprocOpenCL(_Struct):
         self.half_fp_config = None
 
 
+class ProjectListEntry(_Struct):
+    def __init__(self):
+        self.name = ""
+        self.url = ""
+        self.web_url = ""
+        self.general_area = ""
+        self.specific_area = ""
+        self.description = ""
+        self.home = ""
+        self.image = ""
+        self.platforms = []
+
+
 class Project(_Struct):
     def __init__(self):
         self.master_url = ""
@@ -1110,22 +1123,6 @@ class BoincClient(object):
     def get_state(self):
         return CCState.parse(self.rpc.call('<get_state/>'))
 
-    def get_cc_status(self):
-        ''' Return CCStatus instance containing basic status, such as
-            CPU / GPU / Network active/suspended, etc
-        '''
-        if not self.connected:
-            LOGGER.info(
-                f"Not connected, {self.hostname} client connection attempt...")
-            self.connect()
-        try:
-            return CCStatus.parse(self.rpc.call('<get_cc_status/>'))
-        except socket.error as error:
-            self.connected = False
-
-            LOGGER.error(
-                f"Socket error, {self.hostname} client connectioned failed")
-
     def get_results(self, active_only=False):
         ''' Get a list of results.
             Those that are in progress will have information such as CPU time
@@ -1175,20 +1172,46 @@ class BoincClient(object):
 
         return projects
 
+    def get_all_project_list(self):
+        reply = self.rpc.call("<get_all_projects_list/>")
 
-    def get_host_info(self):
-        ''' Get information about host hardware and usage. '''
-        return HostInfo.parse(self.rpc.call('<get_host_info/>'))
+        if not reply or not reply.tag == 'projects':
+            return []
+
+        projects = []
+        for item in list(reply):
+            projects.append(ProjectListEntry.parse(item))
+
+        return projects
+
+    def get_disk_usage(self):
+        return DiskUsageSummary.parse(self.rpc.call('<get_disk_usage/>'))
 
     def get_statistics(self):
         return Statistics.parse(self.rpc.call('<get_statistics/>'))
 
+    def get_cc_status(self):
+        ''' Return CCStatus instance containing basic status, such as
+            CPU / GPU / Network active/suspended, etc
+        '''
+        if not self.connected:
+            LOGGER.info(
+                f"Not connected, {self.hostname} client connection attempt...")
+            self.connect()
+        try:
+            return CCStatus.parse(self.rpc.call('<get_cc_status/>'))
+        except socket.error as error:
+            self.connected = False
+
+            LOGGER.error(
+                f"Socket error, {self.hostname} client connectioned failed")
+
+    def network_available(self):
+        return self.rpc.call('<network_available/>')
+
     def get_tasks(self):
         ''' Same as get_results(active_only=False) '''
         return self.get_results(False)
-
-    def get_disk_usage(self):
-        return DiskUsageSummary.parse(self.rpc.call('<get_disk_usage/>'))
 
     def add_account(self, url="", email="", password=""):
         '''
@@ -1252,6 +1275,10 @@ class BoincClient(object):
     def run_benchmarks(self):
         ''' Run benchmarks. Computing will suspend during benchmarks '''
         return self.rpc.call('<run_benchmarks/>').tag == "success"
+
+    def get_host_info(self):
+        ''' Get information about host hardware and usage. '''
+        return HostInfo.parse(self.rpc.call('<get_host_info/>'))
 
     def quit(self):
         ''' Tell the core client to exit '''
