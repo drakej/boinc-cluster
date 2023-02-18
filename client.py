@@ -799,6 +799,19 @@ class FileTransfer(_Struct):
         self.project_backoff = 0.0
 
 
+class OldResult(_Struct):
+    def __init__(self):
+        self.project_url = ""
+        self.result_name = ""
+        self.app_name = ""
+
+        self.exit_status = 0
+        self.elapsed_time = 0.0
+        self.cpu_time = 0.0
+        self.completed_time = 0.0
+        self.create_time = 0.0
+
+
 class Result(_Struct):
     ''' Also called "task" in some contexts '''
 
@@ -1141,10 +1154,21 @@ class BoincClient(object):
 
         return results
 
-    # TODO: Implement get_old_results call
+    def get_old_results(self):
+        reply = self.rpc.call("<get_old_results/>")
+
+        if not reply.tag == "old_results":
+            return []
+
+        old_results = []
+
+        for item in list(reply):
+            old_results.append(OldResult.parse(item))
+
+        return old_results
 
     def get_file_transfers(self):
-        transfers_xml = self.rpc.call('<get_file_transfers/>')
+        transfers_xml = self.rpc.call("<get_file_transfers/>")
 
         LOGGER.debug(f"Transfers XML: {transfers_xml}")
 
