@@ -982,6 +982,11 @@ class FileRef(_Struct):
         self.open_name = ""
 
 
+class ProejctAttachReply(_Struct):
+    error_num = 0
+    messages = []
+
+
 class AppVersion(_Struct):
     def __init__(self):
 
@@ -1243,7 +1248,57 @@ class BoincClient(object):
                 f"Socket error, {self.hostname} client connectioned failed")
 
     def network_available(self):
-        return self.rpc.call('<network_available/>')
+        return self.rpc.call("<network_available/>")
+
+    def project_op(self, project, op=""):
+        if op == "reset":
+            tag = "project_reset"
+        elif op == "detach":
+            tag = "project_detach"
+        elif op == "update":
+            tag == "project_update"
+        elif op == "suspend":
+            tag == "project_suspend"
+            project.suspended_via_gui = True
+        elif op == "resume":
+            tag == "project_resume"
+            project.suspended_via_gui = False
+        elif op == "allowmorework":
+            tag = "project_allowmorework"
+            project.dont_request_more_work = False
+        elif op == "nomorework":
+            tag = "project_nomorework"
+            project.dont_request_more_work = True
+        elif op == "detach_when_done":
+            tag = "project_detach_when_done"
+        elif op == "dont_detach_when_done":
+            tag = "project_dont_detach_when_done"
+        else:
+            return -1
+
+        reply = self.rpc.call(
+            f"<{tag}><project_url>{project.master_url}</project_url></{tag}>")
+
+        return reply
+
+    def project_attach_from_file(self):
+        return self.rpc.call("<project_attach>\n"
+                             "  <use_config_file/>\n"
+                             "</project_attach>\n")
+
+    def project_attach(self, url, authenticator, name):
+        return self.rpc.call("<project_attach>\n"
+                             f"<project_url>{url}</project_url>"
+                             f"<authenticator>{authenticator}</authenticator>"
+                             f"<project_name>name</project_name>")
+
+    def project_attach_poll(self):
+        reply = self.rpc.call("<project_attach_poll/>")
+
+        if not reply or reply.tag != "project_attach_reply":
+            return None
+
+        return ProejctAttachReply.parse(reply)
 
     def get_tasks(self):
         ''' Same as get_results(active_only=False) '''
