@@ -1300,30 +1300,6 @@ class BoincClient(object):
 
         return ProejctAttachReply.parse(reply)
 
-    def get_tasks(self):
-        ''' Same as get_results(active_only=False) '''
-        return self.get_results(False)
-
-    def add_account(self, url="", email="", password=""):
-        '''
-        '''
-        password_hash = hashlib.md5(email.encode(
-            'utf-8')+password.encode('utf-8')).hexdigest().lower()
-
-        reply = self.rpc.call("<create_account>\n"
-                              f"<url>{url}</url>\n"
-                              f"<email_addr>{email}</email_addr>\n"
-                              f"<passwd_hash>{password_hash}</passwd_hash>\n"
-                              f"<user_name></user_name>\n"
-                              f"<team_name></team_name>\n"
-                              "<consented_to_terms/>\n"
-                              "</create_account>\n")
-
-        LOGGER.debug(
-            f"create_account response for host {self.hostname}: {reply}")
-
-        return reply
-
     def set_mode(self, component, mode, duration=0):
         ''' Do the real work of set_{run,gpu,network}_mode()
             This method is not part of the original API.
@@ -1367,9 +1343,47 @@ class BoincClient(object):
         ''' Run benchmarks. Computing will suspend during benchmarks '''
         return self.rpc.call('<run_benchmarks/>').tag == "success"
 
+    def get_screensaver_tasks(self):
+        ''' Get Screensaver Tasks.'''
+        reply = self.rpc.call("<get_screensaver_tasks/>")
+
+        if not reply or not reply.tag == "get_screensaver_tasks":
+            return []
+
+        tasks = []
+
+        for task in list(reply):
+            tasks.append(Result.parse(task))
+
+        return tasks
+
     def get_host_info(self):
         ''' Get information about host hardware and usage. '''
         return HostInfo.parse(self.rpc.call('<get_host_info/>'))
+
+    def get_tasks(self):
+        ''' Same as get_results(active_only=False) '''
+        return self.get_results(False)
+
+    def add_account(self, url="", email="", password=""):
+        '''
+        '''
+        password_hash = hashlib.md5(email.encode(
+            'utf-8')+password.encode('utf-8')).hexdigest().lower()
+
+        reply = self.rpc.call("<create_account>\n"
+                              f"<url>{url}</url>\n"
+                              f"<email_addr>{email}</email_addr>\n"
+                              f"<passwd_hash>{password_hash}</passwd_hash>\n"
+                              f"<user_name></user_name>\n"
+                              f"<team_name></team_name>\n"
+                              "<consented_to_terms/>\n"
+                              "</create_account>\n")
+
+        LOGGER.debug(
+            f"create_account response for host {self.hostname}: {reply}")
+
+        return reply
 
     def quit(self):
         ''' Tell the core client to exit '''
