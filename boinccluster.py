@@ -450,7 +450,7 @@ def updateTasks():
                 elif task.suspended_via_gui:
                     state = "Task suspended by user"
                 elif cc_status.task_suspend_reason and not throttled and task.active_task_state != 1:
-                    state = "Suspended - %s" % cc_status.task_suspend_reason
+                    state = f"Suspended - {client.SuspendReason.name(cc_status.task_suspend_reason)}"
                 elif cc_status.gpu_suspend_reason and 'GPU' in task.resources:
                     state = "GPU suspended - %s" % client.SuspendReason.name(
                         cc_status.gpu_suspend_reason)
