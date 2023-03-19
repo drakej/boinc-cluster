@@ -791,7 +791,10 @@ class FileTransfer(_Struct):
         self.pers_xfer_active = False
         self.xfer_active = False
         self.num_retries = 0
-        self.fire_request_time = 0.0
+        self.first_request_time = 0.0
+        self.next_request_time = 0.0
+        self.status = 0
+        self.time_so_far = 0.0
         self.bytes_xferred = 0.0
         self.file_offset = 0.0
         self.xfer_speed = 0.0
