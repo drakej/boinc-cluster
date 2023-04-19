@@ -71,7 +71,7 @@
                 name: "used by BOINC: {{disk_usage.boinc|formatbytes}}",
                 y: {{ disk_usage.boinc }}
         }, {
-        name: 'Free, available to BOINC: {{disk_usage.free|formatbytes}}',
+        name: 'Free, available to BOINC: {{disk_usage.available|formatbytes}}',
         y: {{ disk_usage.available }}
         }, {
             name: 'Free, not available to BOINC: {{disk_usage.not_available|formatbytes}}',
