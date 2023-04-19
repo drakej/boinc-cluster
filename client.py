@@ -781,25 +781,48 @@ class DiskUsageProject(_Struct):
 
 class FileTransfer(_Struct):
     def __init__(self):
-        self.name = ""
         self.project_url = ""
         self.project_name = ""
+        self.name = ""
         self.nbytes = 0.0
-        self.uploaded = False
-        self.is_upload = False
-        self.sticky = False
-        self.pers_xfer_active = False
-        self.xfer_active = False
-        self.num_retries = 0
-        self.first_request_time = 0.0
-        self.next_request_time = 0.0
+        self.max_nbytes = 0.0
         self.status = 0
-        self.time_so_far = 0.0
         self.bytes_xferred = 0.0
         self.file_offset = 0.0
         self.xfer_speed = 0.0
         self.hostname = ""
         self.project_backoff = 0.0
+        self.project = None
+        self.persistent_file_xfer = None
+
+    @classmethod
+    def parse(cls, xml):
+        if not isinstance(xml, ElementTree.Element):
+            xml = ElementTree.fromstring(xml)
+
+        file_transfer = super(FileTransfer, cls).parse(xml)
+
+        persistent_file_xfer = PersistentFileXFer.parse(
+            file_transfer.persistent_file_xfer)
+
+        file_transfer.num_retries = persistent_file_xfer.num_retries
+        file_transfer.first_request_time = persistent_file_xfer.first_request_time
+        file_transfer.next_request_time = persistent_file_xfer.next_request_time
+        file_transfer.time_so_far = persistent_file_xfer.time_so_far
+        file_transfer.last_bytes_xferred = persistent_file_xfer.last_bytes_xferred
+        file_transfer.is_upload = persistent_file_xfer.is_upload
+
+        return file_transfer
+
+
+class PersistentFileXFer(_Struct):
+    def __init__(self):
+        self.num_retries = 0
+        self.first_request_time = 0.0
+        self.next_request_time = 0.0
+        self.time_so_far = 0.0
+        self.last_bytes_xferred = 0.0
+        self.is_upload = False
 
 
 class OldResult(_Struct):
