@@ -674,7 +674,33 @@ def updateTransfers():
         if boincClient.connected:
             transfers = boincClient.get_file_transfers()
 
+            cc_status = boincClient.get_cc_status()
+
             for transfer in transfers:
-                transfer
+                status = ""
+
+                if transfer.is_upload:
+                    status += "Upload"
+                else:
+                    status += "Download"
+
+                status += ": "
+
+                if transfer.next_request_time > datetime.utcnow().timestamp():
+                    status += f"retry in {transfer.next_request_time - datetime.utcnow().timestamp()}"
+                elif transfer.status == -114 or transfer.status == -115:
+                    status += "failed"
+                else:
+                    if cc_status.network_suspend_reason:
+                        status += f"suspended - {client.SuspendReason.name(cc_status.network_suspend_reason)}"
+                    elif transfer.xfer_active:
+                        status += "active"
+                    else:
+                        status += "pending"
+
+                if transfer.project_backoff:
+                    status += f" (project backoff: {timedelta(milliseconds=transfer.project_backoff)})"
+
+                transfer.gui_status = status
 
             transferMap[host] = transfers
